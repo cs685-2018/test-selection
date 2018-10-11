@@ -115,7 +115,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "Construct project stats during build";
+            return "Use test generation";
         }
 
     }
