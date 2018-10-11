@@ -1,2 +1,6 @@
 # All target files
 target/
+
+# Eclipse files
+.settings/
+.project
