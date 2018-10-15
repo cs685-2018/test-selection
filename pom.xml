@@ -12,6 +12,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <properties>
+        <java.level>8</java.level>
         <jenkins.version>2.7.3</jenkins.version>
         <structs.version>1.7</structs.version>
         <workflow-step-api.version>2.12</workflow-step-api.version>
