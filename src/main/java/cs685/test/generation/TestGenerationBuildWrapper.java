@@ -1,5 +1,28 @@
 package cs685.test.generation;
 
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Stack;
+
+import javax.annotation.Nonnull;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -8,19 +31,12 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import javax.annotation.Nonnull;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.Stack;
 
 public class TestGenerationBuildWrapper extends BuildWrapper {
 
     private static final String REPORT_TEMPLATE_PATH = "/stats.html";
     private static final String PROJECT_NAME_VAR = "$PROJECT_NAME$";
-    private static final String CLASSES_NUMBER_VAR = "$CLASSES_NUMBER$";
-    private static final String LINES_NUMBER_VAR = "$LINES_NUMBER$";
+    private static final String CLASS_METHOD_CONTENT_VAR = "$CLASS_METHOD_CONTENT$";
 
     @DataBoundConstructor
     public TestGenerationBuildWrapper() {
@@ -54,38 +70,35 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     }
 
     private static TestGeneration buildStats(FilePath root) throws IOException, InterruptedException {
-        int classesNumber = 0;
-        int linesNumber = 0;
+    	HashMap<String, List<String>> classMap = new HashMap<String, List<String>>();
+
         Stack<FilePath> toProcess = new Stack<>();
         toProcess.push(root);
         while (!toProcess.isEmpty()) {
             FilePath path = toProcess.pop();
             if (path.isDirectory()) {
+            	// If directory, add all content within it to the stack
                 toProcess.addAll(path.list());
             } else if (path.getName().endsWith(".java")) {
-                classesNumber++;
-                linesNumber += countLines(path);
+            	// If a java file, parse it.
+            	CompilationUnit cu = JavaParser.parse(path.read());
+            	
+            	String className = null;
+            	// Hopefully only 1 class per file?
+            	for (ClassOrInterfaceDeclaration classDecl : cu.findAll(ClassOrInterfaceDeclaration.class)) {
+            		className = classDecl.getName().asString();
+            	}
+            	
+            	if (!classMap.containsKey(className)) {
+            		classMap.put(className, new ArrayList<String>());
+            	}
+            	
+            	for (MethodDeclaration method : cu.findAll(MethodDeclaration.class)) {
+            		classMap.get(className).add(method.getName().asString());
+            	}
             }
         }
-        return new TestGeneration(classesNumber, linesNumber);
-    }
-
-    private static int countLines(FilePath path) throws IOException, InterruptedException {
-        byte[] buffer = new byte[1024];
-        int result = 1;
-        try (InputStream in = path.read()) {
-            while (true) {
-                int read = in.read(buffer);
-                if (read < 0) {
-                    return result;
-                }
-                for (int i = 0; i < read; i++) {
-                    if (buffer[i] == '\n') {
-                        result++;
-                    }
-                }
-            }
-        }
+        return new TestGeneration(classMap);
     }
 
     private static String generateReport(String projectName, TestGeneration stats) throws IOException {
@@ -99,8 +112,31 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         }
         String content = new String(bOut.toByteArray(), StandardCharsets.UTF_8);
         content = content.replace(PROJECT_NAME_VAR, projectName);
-        content = content.replace(CLASSES_NUMBER_VAR, String.valueOf(stats.getClassesNumber()));
-        content = content.replace(LINES_NUMBER_VAR, String.valueOf(stats.getLinesNumber()));
+        StringBuilder tableContent = new StringBuilder();
+        for (String className : stats.getClassNames()) {
+        	List<String> methodNames = stats.getMethodNames(className);
+        	if (methodNames.size() > 0) {
+	        	tableContent.append("<tr>\n");
+	        	tableContent.append("<td rowspan=\"");
+	        	tableContent.append(methodNames.size());
+	        	tableContent.append("\">");
+	        	tableContent.append(className);
+	        	tableContent.append("</td>\n<td>");
+	        	tableContent.append(methodNames.get(0));
+	        	tableContent.append("</td>\n</tr>\n");
+	        	for (int i = 1; i < methodNames.size(); i++) {
+	        		tableContent.append("<tr>\n<td></td>\n<td>");
+	        		tableContent.append(methodNames.get(i));
+	        		tableContent.append("</td>\n</tr>\n");
+	        	}
+        	} else {
+        		tableContent.append("<tr>\n<td>");
+        		tableContent.append(className);
+        		tableContent.append("</td>\n<td>No methods found</td>\n</tr>\n");
+        	}
+        }
+        content = content.replaceAll(CLASS_METHOD_CONTENT_VAR, tableContent.toString());
+        
         return content;
     }
 

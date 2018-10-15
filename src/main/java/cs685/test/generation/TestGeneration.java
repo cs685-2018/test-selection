@@ -1,20 +1,27 @@
 package cs685.test.generation;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
 public class TestGeneration {
 
-    private final int classesNumber;
-    private final int linesNumber;
-
-    public TestGeneration(int classesNumber, int linesNumber) {
-        this.classesNumber = classesNumber;
-        this.linesNumber = linesNumber;
+    private HashMap<String, List<String>> map;
+    
+    public TestGeneration(HashMap<String, List<String>> map) {
+        this.map = map;
     }
 
-    public int getClassesNumber() {
-        return classesNumber;
+    public Set<String> getClassNames() {
+    	return this.map.keySet();
     }
-
-    public int getLinesNumber() {
-        return linesNumber;
+    
+    public List<String> getMethodNames(String className) {
+    	if (this.map.containsKey(className)) {
+    		return this.map.get(className);
+    	} else {
+    		return Collections.emptyList();
+    	}
     }
 }
