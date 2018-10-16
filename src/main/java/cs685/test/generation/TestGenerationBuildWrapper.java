@@ -21,6 +21,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import hudson.Extension;
@@ -63,6 +64,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path),
                   StandardCharsets.UTF_8))) {
                     writer.write(report);
+                    writer.close();
                 }
                 return super.tearDown(build, listener);
             }
@@ -94,7 +96,23 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             	}
             	
             	for (MethodDeclaration method : cu.findAll(MethodDeclaration.class)) {
-            		classMap.get(className).add(method.getName().asString());
+            		StringBuilder sb = new StringBuilder();
+            		sb.append(method.getName());
+                    sb.append("(");
+                    boolean firstParam = true;
+                    for (Parameter param : method.getParameters()) {
+                        if (firstParam) {
+                            firstParam = false;
+                        } else {
+                            sb.append(", ");
+                        }
+                        sb.append(param.getType().toString());
+                        if (param.isVarArgs()) {
+                            sb.append("...");
+                        }
+                    }
+                    sb.append(")");
+            		classMap.get(className).add(sb.toString());
             	}
             }
         }
@@ -125,7 +143,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 	        	tableContent.append(methodNames.get(0));
 	        	tableContent.append("</td>\n</tr>\n");
 	        	for (int i = 1; i < methodNames.size(); i++) {
-	        		tableContent.append("<tr>\n<td></td>\n<td>");
+	        		tableContent.append("<tr>\n<td>");
 	        		tableContent.append(methodNames.get(i));
 	        		tableContent.append("</td>\n</tr>\n");
 	        	}
@@ -135,7 +153,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         		tableContent.append("</td>\n<td>No methods found</td>\n</tr>\n");
         	}
         }
-        content = content.replaceAll(CLASS_METHOD_CONTENT_VAR, tableContent.toString());
+        content = content.replace(CLASS_METHOD_CONTENT_VAR, tableContent.toString());
         
         return content;
     }
