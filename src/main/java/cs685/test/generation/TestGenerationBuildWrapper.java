@@ -22,7 +22,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
-import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import com.github.jenkins.lastchanges.model.CommitChanges;
 
 import hudson.Extension;
 import hudson.FilePath;
@@ -38,6 +38,8 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     private static final String REPORT_TEMPLATE_PATH = "/stats.html";
     private static final String PROJECT_NAME_VAR = "$PROJECT_NAME$";
     private static final String CLASS_METHOD_CONTENT_VAR = "$CLASS_METHOD_CONTENT$";
+    private static final String GIT_COMMITS_VAR = "$GIT_COMMITS$";
+    private static final String GIT_DIFFS_VAR = "$GIT_DIFFS$";
 
     @DataBoundConstructor
     public TestGenerationBuildWrapper() {
@@ -73,7 +75,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 
     private static TestGeneration buildStats(FilePath root) throws IOException, InterruptedException {
     	HashMap<String, List<String>> classMap = new HashMap<String, List<String>>();
-
+    	
         Stack<FilePath> toProcess = new Stack<>();
         toProcess.push(root);
         while (!toProcess.isEmpty()) {
@@ -142,11 +144,14 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 	        	tableContent.append("</td>\n<td>");
 	        	tableContent.append(methodNames.get(0));
 	        	tableContent.append("</td>\n</tr>\n");
+				
+				
 	        	for (int i = 1; i < methodNames.size(); i++) {
 	        		tableContent.append("<tr>\n<td>");
 	        		tableContent.append(methodNames.get(i));
 	        		tableContent.append("</td>\n</tr>\n");
 	        	}
+				
         	} else {
         		tableContent.append("<tr>\n<td>");
         		tableContent.append(className);
@@ -154,6 +159,21 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         	}
         }
         content = content.replace(CLASS_METHOD_CONTENT_VAR, tableContent.toString());
+        
+        StringBuilder commitContent = new StringBuilder();
+        List<CommitChanges> commits = stats.getChanges();
+        for (CommitChanges commit : commits) {
+        	commitContent.append("<table>\n<tr><td>toString()</td><td>");
+        	commitContent.append(commit.toString());
+        	commitContent.append("</td></tr>\n<tr><td>getChanges()</td><td>");
+        	commitContent.append(commit.getChanges());
+        	commitContent.append("</td></tr>\n<tr><td>getEscapedDiff()</td><td>");
+        	commitContent.append(commit.getEscapedDiff());
+        	commitContent.append("</td></tr>\n</table>\n");
+        }
+        content = content.replace(GIT_COMMITS_VAR, commitContent.toString());
+        
+        content = content.replace(GIT_DIFFS_VAR, stats.getDifferences() + "\n");
         
         return content;
     }
