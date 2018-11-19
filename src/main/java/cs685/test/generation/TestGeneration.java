@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
+import com.github.jenkins.lastchanges.model.LastChanges;
+
 public class TestGeneration {
 
     private HashMap<String, List<String>> map;
@@ -24,4 +26,10 @@ public class TestGeneration {
     		return Collections.emptyList();
     	}
     }
+	
+	public List<String> getChanges(){
+		return LastChanges.getCommits();
+		
+	public String getDifferences (){
+		return LastChanges.getDiff();
 }
