@@ -142,17 +142,26 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 	        	tableContent.append("</td>\n<td>");
 	        	tableContent.append(methodNames.get(0));
 	        	tableContent.append("</td>\n</tr>\n");
+				
+				
 	        	for (int i = 1; i < methodNames.size(); i++) {
 	        		tableContent.append("<tr>\n<td>");
 	        		tableContent.append(methodNames.get(i));
 	        		tableContent.append("</td>\n</tr>\n");
 	        	}
+				
         	} else {
         		tableContent.append("<tr>\n<td>");
         		tableContent.append(className);
         		tableContent.append("</td>\n<td>No methods found</td>\n</tr>\n");
         	}
         }
+        tableContent.append("<tr>\n");
+		tableContent.append(getChanges());
+		tableContent.append("<tr>\n");
+        tableContent.append(getDifferences());
+
+
         content = content.replace(CLASS_METHOD_CONTENT_VAR, tableContent.toString());
         
         return content;
