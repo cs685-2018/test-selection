@@ -29,7 +29,7 @@ public class TestGeneration {
 	
 	public List<String> getChanges(){
 		return LastChanges.getCommits();
-		
+	}
 	public String getDifferences (){
 		return LastChanges.getDiff();
 }
