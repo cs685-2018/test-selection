@@ -1,6 +1,7 @@
 package cs685.test.generation;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,6 +33,11 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
+import io.reflectoring.diffparser.api.DiffParser;
+import io.reflectoring.diffparser.api.UnifiedDiffParser;
+import io.reflectoring.diffparser.api.model.Diff;
+import io.reflectoring.diffparser.api.model.Hunk;
+import io.reflectoring.diffparser.api.model.Line;
 
 public class TestGenerationBuildWrapper extends BuildWrapper {
 
@@ -40,6 +46,8 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     private static final String CLASS_METHOD_CONTENT_VAR = "$CLASS_METHOD_CONTENT$";
     private static final String GIT_COMMITS_VAR = "$GIT_COMMITS$";
     private static final String GIT_DIFFS_VAR = "$GIT_DIFFS$";
+    private static final String DIFF_PARSER_VAR = "$DIFF_PARSER$";
+    
 
     @DataBoundConstructor
     public TestGenerationBuildWrapper() {
@@ -183,6 +191,35 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         content = content.replace(GIT_COMMITS_VAR, commitContent.toString());
         
         content = content.replace(GIT_DIFFS_VAR, stats.getDifferences() + "\n");
+        
+        DiffParser parser = new UnifiedDiffParser();
+        InputStream in = new ByteArrayInputStream(stats.getDifferences().getBytes());
+        List<Diff> diffs = parser.parse(in);
+        StringBuilder diffContent = new StringBuilder();
+        diffContent.append("<table>\n");
+        for (Diff diff : diffs) {
+            diffContent.append("<tr><td>From file</td><td>");
+        	diffContent.append(diff.getFromFileName());
+            diffContent.append("</td></tr>\n<tr><td>To file</td><td>");
+            diffContent.append(diff.getToFileName());
+            diffContent.append("</td></tr>\n<tr><td>Header lines</td><td>");
+            List<String> headerLines = diff.getHeaderLines();
+            for (String headerLine : headerLines) {
+                diffContent.append(headerLine + "<br/>");
+            }
+            diffContent.append("</td></tr>\n<tr><td>Hunks</td><td>");
+            int i = 0;
+            for (Hunk hunk : diff.getHunks()) {
+                diffContent.append("Hunk" + i + ":<br/>");
+                for (Line line : hunk.getLines()) {
+                    diffContent.append(line.getContent() + "<br/>");
+                }
+            }
+            diffContent.append("</td></tr>\n");
+        }
+        diffContent.append("</table>\n");
+        
+        content=content.replace(DIFF_PARSER_VAR, diffContent.toString());
         
         return content;
     }

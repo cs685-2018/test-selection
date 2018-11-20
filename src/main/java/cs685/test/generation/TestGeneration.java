@@ -22,26 +22,9 @@ public class TestGeneration {
     
     public TestGeneration(HashMap<String, List<String>> map, FilePath workspaceDir) {
         this.map = map;
-        /*
-        URI remoteURL = null;
-		try {
-			remoteURL = new URI("https:///github.com/zembrodt/cs685-hw2");
-		} catch (URISyntaxException e) {
-			System.out.println("Could not find github url");
-			e.printStackTrace();
-		}
-    	File remoteFile = new File(remoteURL); // TODO: get git repo url from jenkins project
-    	FilePath workspaceTargetDir = new FilePath(remoteFile);
-    	*/
-    	//this.gitRepository = GitLastChanges.repository(workspaceTargetDir.getRemote() + "/.git")
-        System.out.println("***TestGeneration().workspaceDir (FilePath): " + workspaceDir);
-        System.out.println("***TestGeneration().workspaceDir.isRemote() (boolean): " + workspaceDir.isRemote());
-        System.out.println("***TestGeneration().workspaceDir.getRemote() (String): " + workspaceDir.getRemote());
-        File remoteGitDir = new File(workspaceDir.getRemote() + "/.git");
-        System.out.println("***TestGeneration().remoteGitDir (File): " + remoteGitDir);
         this.gitRepository = GitLastChanges.repository(workspaceDir.getRemote() + "/.git");
     	this.lastChanges = GitLastChanges.getInstance().changesOf(gitRepository);
-    	// We may need this?
+    	// We may need this? We may need to get more than one commit if we want to get X commits since last push
     	this.lastChanges.addCommit(new CommitChanges(lastChanges.getCurrentRevision(), lastChanges.getDiff()));
     }
 
