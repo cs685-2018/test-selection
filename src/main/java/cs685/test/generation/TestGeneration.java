@@ -1,8 +1,6 @@
 package cs685.test.generation;
 
 import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +20,7 @@ public class TestGeneration {
     private Repository gitRepository;
     private LastChanges lastChanges;
     
-    public TestGeneration(HashMap<String, List<String>> map) {
+    public TestGeneration(HashMap<String, List<String>> map, FilePath workspaceDir) {
         this.map = map;
         /*
         URI remoteURL = null;
@@ -35,9 +33,16 @@ public class TestGeneration {
     	File remoteFile = new File(remoteURL); // TODO: get git repo url from jenkins project
     	FilePath workspaceTargetDir = new FilePath(remoteFile);
     	*/
-    	//this.gitRepository = GitLastChanges.repository(workspaceTargetDir.getRemote() + "/.git");
-    	this.gitRepository = GitLastChanges.repository("https://github.com/zembrodt/cs685-hw2/.git");
+    	//this.gitRepository = GitLastChanges.repository(workspaceTargetDir.getRemote() + "/.git")
+        System.out.println("***TestGeneration().workspaceDir (FilePath): " + workspaceDir);
+        System.out.println("***TestGeneration().workspaceDir.isRemote() (boolean): " + workspaceDir.isRemote());
+        System.out.println("***TestGeneration().workspaceDir.getRemote() (String): " + workspaceDir.getRemote());
+        File remoteGitDir = new File(workspaceDir.getRemote() + "/.git");
+        System.out.println("***TestGeneration().remoteGitDir (File): " + remoteGitDir);
+        this.gitRepository = repository(workspaceDir.getRemote() + "/.git");
     	this.lastChanges = GitLastChanges.getInstance().changesOf(gitRepository);
+    	// We may need this?
+    	this.lastChanges.addCommit(new CommitChanges(lastChanges.getCurrentRevision(), lastChanges.getDiff()));
     }
 
     public Set<String> getClassNames() {

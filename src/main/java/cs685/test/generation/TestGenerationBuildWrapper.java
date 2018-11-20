@@ -75,7 +75,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 
     private static TestGeneration buildStats(FilePath root) throws IOException, InterruptedException {
     	HashMap<String, List<String>> classMap = new HashMap<String, List<String>>();
-    	
+    	System.out.println("***TestGenerationBuildWrapper.buildStats.root (FilePath): " + root);
         Stack<FilePath> toProcess = new Stack<>();
         toProcess.push(root);
         while (!toProcess.isEmpty()) {
@@ -118,7 +118,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             	}
             }
         }
-        return new TestGeneration(classMap);
+        return new TestGeneration(classMap, root);
     }
 
     private static String generateReport(String projectName, TestGeneration stats) throws IOException {
