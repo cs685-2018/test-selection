@@ -151,28 +151,30 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         content = content.replace(PROJECT_NAME_VAR, projectName);
         StringBuilder tableContent = new StringBuilder();
         for (String className : stats.getClassNames()) {
-        	List<String> methodNames = stats.getMethodNames(className);
-        	if (methodNames.size() > 0) {
-	        	tableContent.append("<tr>\n");
-	        	tableContent.append("<td rowspan=\"");
-	        	tableContent.append(methodNames.size());
-	        	tableContent.append("\">");
-	        	tableContent.append(className);
-	        	tableContent.append("</td>\n<td>");
-	        	tableContent.append(methodNames.get(0));
-	        	tableContent.append("</td>\n</tr>\n");
-				
-				
-	        	for (int i = 1; i < methodNames.size(); i++) {
+        	if (className.toLowerCase().contains("test")) {
+	        	List<String> methodNames = stats.getMethodNames(className);
+	        	if (methodNames.size() > 0) {
+		        	tableContent.append("<tr>\n");
+		        	tableContent.append("<td rowspan=\"");
+		        	tableContent.append(methodNames.size());
+		        	tableContent.append("\">");
+		        	tableContent.append(className);
+		        	tableContent.append("</td>\n<td>");
+		        	tableContent.append(methodNames.get(0));
+		        	tableContent.append("</td>\n</tr>\n");
+					
+					
+		        	for (int i = 1; i < methodNames.size(); i++) {
+		        		tableContent.append("<tr>\n<td>");
+		        		tableContent.append(methodNames.get(i));
+		        		tableContent.append("</td>\n</tr>\n");
+		        	}
+					
+	        	} else {
 	        		tableContent.append("<tr>\n<td>");
-	        		tableContent.append(methodNames.get(i));
-	        		tableContent.append("</td>\n</tr>\n");
+	        		tableContent.append(className);
+	        		tableContent.append("</td>\n<td>No methods found</td>\n</tr>\n");
 	        	}
-				
-        	} else {
-        		tableContent.append("<tr>\n<td>");
-        		tableContent.append(className);
-        		tableContent.append("</td>\n<td>No methods found</td>\n</tr>\n");
         	}
         }
         content = content.replace(CLASS_METHOD_CONTENT_VAR, tableContent.toString());
@@ -180,7 +182,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         StringBuilder commitContent = new StringBuilder();
         List<CommitChanges> commits = stats.getChanges();
         for (CommitChanges commit : commits) {
-        	commitContent.append("<table>\n<tr><td>toString()</td><td>");
+        	commitContent.append("<table border=\"1\">\n<tr><td>toString()</td><td>");
         	commitContent.append(commit.toString());
         	commitContent.append("</td></tr>\n<tr><td>getChanges()</td><td>");
         	commitContent.append(commit.getChanges());
@@ -196,7 +198,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         InputStream in = new ByteArrayInputStream(stats.getDifferences().getBytes());
         List<Diff> diffs = parser.parse(in);
         StringBuilder diffContent = new StringBuilder();
-        diffContent.append("<table>\n");
+        diffContent.append("<table border=\"1\">\n");
         for (Diff diff : diffs) {
             diffContent.append("<tr><td>From file</td><td>");
         	diffContent.append(diff.getFromFileName());
@@ -210,9 +212,17 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             diffContent.append("</td></tr>\n<tr><td>Hunks</td><td>");
             int i = 0;
             for (Hunk hunk : diff.getHunks()) {
-                diffContent.append("Hunk" + i + ":<br/>");
+                diffContent.append("<strong>Hunk " + i + "</strong>:<br/>");
                 for (Line line : hunk.getLines()) {
-                    diffContent.append(line.getContent() + "<br/>");
+                	if (line.getLineType() == Line.LineType.TO || line.getLineType() == Line.LineType.FROM) {
+                		diffContent.append("<span style=\"color: ");
+                		if (line.getLineType() == Line.LineType.TO) {
+                			diffContent.append("green");
+                		} else {
+                			diffContent.append("red");
+                		}
+                		diffContent.append("\"><em>" + line.getContent() + "</em></span><br/>");
+                	}
                 }
             }
             diffContent.append("</td></tr>\n");
