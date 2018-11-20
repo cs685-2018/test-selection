@@ -52,6 +52,14 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             public boolean tearDown(AbstractBuild build, BuildListener listener)
               throws IOException, InterruptedException
             {
+            	// Maven findbugs believes build.getWorkspace returns (or potentially returns) null at some point
+            	// Error given is "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"
+            	if (build == null) {
+            		throw new NullPointerException("TestGenerationBuildWrapper.setUp.tearDown: AbstractBuild object is null.");
+            	}
+            	else if (build.getWorkspace() == null) {
+            		throw new NullPointerException("TestGenerationBuildWrapper.setUp.tearDown: AbstractBuild.getWorkspace() object is null.");
+            	}
                 TestGeneration stats = buildStats(build.getWorkspace());
                 String report = generateReport(build.getProject().getDisplayName(), stats);
                 File artifactsDir = build.getArtifactsDir();
@@ -75,7 +83,8 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 
     private static TestGeneration buildStats(FilePath root) throws IOException, InterruptedException {
     	HashMap<String, List<String>> classMap = new HashMap<String, List<String>>();
-    	System.out.println("***TestGenerationBuildWrapper.buildStats.root (FilePath): " + root);
+    	FilePath workspaceDir = root;
+    	System.out.println("***TestGenerationBuildWrapper.buildStats.root (FilePath): " + workspaceDir);
         Stack<FilePath> toProcess = new Stack<>();
         toProcess.push(root);
         while (!toProcess.isEmpty()) {
@@ -118,7 +127,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             	}
             }
         }
-        return new TestGeneration(classMap, root);
+        return new TestGeneration(classMap, workspaceDir);
     }
 
     private static String generateReport(String projectName, TestGeneration stats) throws IOException {

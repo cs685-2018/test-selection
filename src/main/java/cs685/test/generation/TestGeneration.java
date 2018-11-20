@@ -39,7 +39,7 @@ public class TestGeneration {
         System.out.println("***TestGeneration().workspaceDir.getRemote() (String): " + workspaceDir.getRemote());
         File remoteGitDir = new File(workspaceDir.getRemote() + "/.git");
         System.out.println("***TestGeneration().remoteGitDir (File): " + remoteGitDir);
-        this.gitRepository = repository(workspaceDir.getRemote() + "/.git");
+        this.gitRepository = GitLastChanges.repository(workspaceDir.getRemote() + "/.git");
     	this.lastChanges = GitLastChanges.getInstance().changesOf(gitRepository);
     	// We may need this?
     	this.lastChanges.addCommit(new CommitChanges(lastChanges.getCurrentRevision(), lastChanges.getDiff()));
