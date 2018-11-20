@@ -215,15 +215,16 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 diffContent.append("<strong>Hunk " + i + "</strong>:<br/>");
                 for (Line line : hunk.getLines()) {
                 	if (line.getLineType() == Line.LineType.TO || line.getLineType() == Line.LineType.FROM) {
-                		diffContent.append("<span style=\"color: ");
+                		diffContent.append("<font color=\"");
                 		if (line.getLineType() == Line.LineType.TO) {
                 			diffContent.append("green");
                 		} else {
                 			diffContent.append("red");
                 		}
-                		diffContent.append("\"><em>" + line.getContent() + "</em></span><br/>");
+                		diffContent.append("\"><em>" + line.getContent() + "</em></font><br/>");
                 	}
                 }
+                i++;
             }
             diffContent.append("</td></tr>\n");
         }
