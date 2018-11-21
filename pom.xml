@@ -89,12 +89,23 @@
 		    <artifactId>javaparser-symbol-solver-core</artifactId>
 		    <version>3.6.26</version>
 		</dependency>
+		<!-- Parsing git diffs -->
+		<dependency>
+			<groupId>io.reflectoring.diffparser</groupId>
+		    <artifactId>diffparser</artifactId>
+		    <version>1.4</version>
+		</dependency>
     </dependencies>
     <repositories>
         <repository>
             <id>repo.jenkins-ci.org</id>
             <url>https://repo.jenkins-ci.org/public/</url>
         </repository>
+        <!-- Repository for diffparser -->
+        <repository>
+	    	<id>jcenter</id>
+	    	<url>https://jcenter.bintray.com/</url>
+	  	</repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
