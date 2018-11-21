@@ -68,7 +68,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             	else if (build.getWorkspace() == null) {
             		throw new NullPointerException("TestGenerationBuildWrapper.setUp.tearDown: AbstractBuild.getWorkspace() object is null.");
             	}
-                TestGeneration stats = buildStats(build.getWorkspace());
+                TestGeneration stats = buildStats(build.getWorkspace(), build);
                 String report = generateReport(build.getProject().getDisplayName(), stats);
                 File artifactsDir = build.getArtifactsDir();
                 if (!artifactsDir.isDirectory()) {
@@ -89,7 +89,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         };
     }
 
-    private static TestGeneration buildStats(FilePath root) throws IOException, InterruptedException {
+    private static TestGeneration buildStats(FilePath root, AbstractBuild build) throws IOException, InterruptedException {
     	HashMap<String, List<String>> classMap = new HashMap<String, List<String>>();
     	FilePath workspaceDir = root;
     	System.out.println("***TestGenerationBuildWrapper.buildStats.root (FilePath): " + workspaceDir);
@@ -135,7 +135,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             	}
             }
         }
-        return new TestGeneration(classMap, workspaceDir);
+        return new TestGeneration(classMap, workspaceDir, build);
     }
 
     private static String generateReport(String projectName, TestGeneration stats) throws IOException {
