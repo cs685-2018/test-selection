@@ -84,8 +84,13 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                     writer.write(report);
                     writer.close();
                 }
-                return super.tearDown(build, listener);
-            }
+                //maven code is gonna go here
+				MavenCli cli = new MavenCli();
+				cli.doMain(new String[]{"clean", "install"}, "project_dir", System.out, System.out);
+				
+				
+				return super.tearDown(build, listener);
+			}
         };
     }
 
@@ -148,7 +153,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             }
         }
         String content = new String(bOut.toByteArray(), StandardCharsets.UTF_8);
-        content = content.replace(PROJECT_NAME_VAR, projectName);
+        content =v content.replace(PROJECT_NAME_VAR, projectName);
         StringBuilder tableContent = new StringBuilder();
         for (String className : stats.getClassNames()) {
         	if (className.toLowerCase().contains("test")) {
