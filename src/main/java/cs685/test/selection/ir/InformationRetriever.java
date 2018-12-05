@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 
+import cs685.test.generation.TestGenerationBuildWrapper;
 import hudson.FilePath;
 import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
@@ -41,6 +43,9 @@ import io.reflectoring.diffparser.api.model.Range;
 public class InformationRetriever {
 	// TODO: move these to another class/file?
 	// Static member variables
+	private static final String STOPWORDS_FILENAME = "stopwords.txt";
+	private static final String KEYWORDS_FILENAME = "keywords.txt";
+	
 	private static Set<String> stopwords;
 	private static Set<String> keywords;
 	
@@ -92,18 +97,26 @@ public class InformationRetriever {
 	 * @throws InterruptedException 
 	 */
 	public InformationRetriever(FilePath root, List<Diff> diffs) throws IOException, InterruptedException {
+		// TODO: for each code change line:
+			// Find the line that matches in Javaparser tree (either by line number match (preferably) or string match)
+			// Use Javaparser to determine if any comments are associated with the line
+				// Special case for if they're on the same line? (ex: int i = 5; // an incrementor)
+				// the line already grabbed by the DiffParser would have this information
+		// TODO: should we add a method's/class's javadoc?
+		// TODO: check where the DiffParser diff's line number range comes from (we'd prefer just TO lines)
+			// TO lines vs all lines (neutral, from, and to)
+		
 		// Load stopwords and keywords
 		stopwords = new HashSet<String>();
 		keywords = new HashSet<String>();
-		// TODO: add these files to resources
-		File stopwordsFile = new File("stopwords.txt");
-		File keywordsFile = new File("keywords.txt");
-		try (BufferedReader br = new BufferedReader(new FileReader(stopwordsFile))) {
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(
+				TestGenerationBuildWrapper.class.getResourceAsStream(STOPWORDS_FILENAME)))) {
 			for (String line; (line = br.readLine()) != null;) {
-				stopwords.add(line.replaceAll("\\'", ""));
+				stopwords.add(line.replaceAll("\\'", "")); // remove single quotes
 			}
 		}
-		try (BufferedReader br = new BufferedReader(new FileReader(keywordsFile))) {
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(
+				TestGenerationBuildWrapper.class.getResourceAsStream(KEYWORDS_FILENAME)))) {
 			for (String line; (line = br.readLine()) != null;) {
 				keywords.add(line);
 			}
