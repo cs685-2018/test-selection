@@ -37,6 +37,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 
     private static final String REPORT_TEMPLATE_PATH = "/stats.html";
     private static final String PROJECT_NAME_VAR = "$PROJECT_NAME$";
+    private static final String SELECTED_TESTS_VAR = "$SELECTED_TESTS$";
 
     @DataBoundConstructor
     public TestGenerationBuildWrapper() {
@@ -44,6 +45,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 
     @Override
     public Environment setUp(AbstractBuild build, final Launcher launcher, BuildListener listener) {
+    	// TODO: find a better method to display the test selection results than an html file
         return new Environment() {
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
@@ -103,9 +105,11 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 System.out.println("Test selection string=[" + testSelection.toString() + "]");
                 
                 // TODO: execute selected tests
+                // Temporary method to display selected tests
+                String report = generateReport(build.getProject().getDisplayName(), testSelection.toString());
                 
                 // TODO: old method to generate the report
-                String report = generateReport(build.getProject().getDisplayName());
+                //String report = generateReport(build.getProject().getDisplayName());
                 File artifactsDir = build.getArtifactsDir();
                 if (!artifactsDir.isDirectory()) {
                     boolean success = artifactsDir.mkdirs();
@@ -125,7 +129,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         };
     }
 
-    // TODO: redo this method to return something else
+    // TODO: redo this method to return something else - DONE?
     private static Set<String> getSelectedTests(FilePath root, AbstractBuild build, int n) throws IOException, InterruptedException, ParseException {
     	HashMap<String, List<String>> classMap = new HashMap<String, List<String>>();
     	FilePath workspaceDir = root;
@@ -148,7 +152,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     }
 
     // TODO: old function to generate the HTML report file
-    private static String generateReport(String projectName) throws IOException {
+    private static String generateReport(String projectName, String selectedTests) throws IOException {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         try (InputStream in = TestGenerationBuildWrapper.class.getResourceAsStream(REPORT_TEMPLATE_PATH)) {
             byte[] buffer = new byte[1024];
@@ -159,6 +163,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         }
         String content = new String(bOut.toByteArray(), StandardCharsets.UTF_8);
         content = content.replace(PROJECT_NAME_VAR, projectName);
+        content = content.replace(SELECTED_TESTS_VAR, selectedTests);
                 
         return content;
     }
