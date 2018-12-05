@@ -4,11 +4,13 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.Collections;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays; 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +40,17 @@ import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
 import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
+
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.InvocationOutputHandler;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
+import org.apache.maven.shared.invoker.Invoker;
+import org.apache.maven.shared.invoker.MavenInvocationException;
+
+
+
 
 public class TestGenerationBuildWrapper extends BuildWrapper {
 
@@ -85,11 +98,11 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                     writer.close();
                 }
                 //maven code is gonna go here
-				MavenCli cli = new MavenCli();
-				cli.doMain(new String[]{"clean", "install"}, "project_dir", System.out, System.out);
-				
-				
-				return super.tearDown(build, listener);
+
+		runCommand("mvn -Dtest key + '#'+String.join('+',selectedTestsMapper.get(key))",
+                new File("/my/working/dir/"));
+	
+		return super.tearDown(build, listener);
 			}
         };
     }
@@ -153,7 +166,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             }
         }
         String content = new String(bOut.toByteArray(), StandardCharsets.UTF_8);
-        content =v content.replace(PROJECT_NAME_VAR, projectName);
+        content.replace(PROJECT_NAME_VAR, projectName);
         StringBuilder tableContent = new StringBuilder();
         for (String className : stats.getClassNames()) {
         	if (className.toLowerCase().contains("test")) {
@@ -239,6 +252,33 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         
         return content;
     }
+
+	public void runCommand(String mavenCommand, File workingDirectory) {
+		InvocationRequest request = new DefaultInvocationRequest();
+		request.setPomFile(new File(workingDirectory, "pom.xml"));
+		request.setGoals(Collections.singletonList(mavenCommand));
+	 
+		Invoker invoker = new DefaultInvoker();
+		final StringBuilder mavenOutput = new StringBuilder();
+		invoker.setOutputHandler(new InvocationOutputHandler() {
+	 
+		    public void consumeLine(String line) {
+		        mavenOutput.append(line).append(System.lineSeparator());
+		    }
+		});
+		// You can find the Maven home by calling "mvn --version"
+		invoker.setMavenHome(new File("/usr/local/Cellar/maven/3.3.3/libexec"));
+		try {
+		    InvocationResult invocationResult = invoker.execute(request);
+		    // Process maven output
+		    System.out.println(mavenOutput);
+		    if (invocationResult.getExitCode() != 0) {
+		        // handle error
+		    }
+		} catch (MavenInvocationException e) {
+		    e.printStackTrace();
+		}
+	    }
 
     @Extension
     public static final class DescriptorImpl extends BuildWrapperDescriptor {
