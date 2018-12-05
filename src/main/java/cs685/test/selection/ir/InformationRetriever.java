@@ -110,13 +110,13 @@ public class InformationRetriever {
 		stopwords = new HashSet<String>();
 		keywords = new HashSet<String>();
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				TestGenerationBuildWrapper.class.getResourceAsStream(STOPWORDS_FILENAME)))) {
+				InformationRetriever.class.getResourceAsStream(STOPWORDS_FILENAME)))) {
 			for (String line; (line = br.readLine()) != null;) {
 				stopwords.add(line.replaceAll("\\'", "")); // remove single quotes
 			}
 		}
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				TestGenerationBuildWrapper.class.getResourceAsStream(KEYWORDS_FILENAME)))) {
+				InformationRetriever.class.getResourceAsStream(KEYWORDS_FILENAME)))) {
 			for (String line; (line = br.readLine()) != null;) {
 				keywords.add(line);
 			}
