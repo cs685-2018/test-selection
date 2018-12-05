@@ -1,12 +1,9 @@
 package cs685.test.selection.ir;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,7 +23,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 
-import cs685.test.generation.TestGenerationBuildWrapper;
 import hudson.FilePath;
 import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
@@ -43,8 +39,8 @@ import io.reflectoring.diffparser.api.model.Range;
 public class InformationRetriever {
 	// TODO: move these to another class/file?
 	// Static member variables
-	private static final String STOPWORDS_FILENAME = "stopwords.txt";
-	private static final String KEYWORDS_FILENAME = "keywords.txt";
+	private static final String STOPWORDS_FILENAME = "/stopwords.txt";
+	private static final String KEYWORDS_FILENAME = "/keywords.txt";
 	
 	private static Set<String> stopwords;
 	private static Set<String> keywords;
