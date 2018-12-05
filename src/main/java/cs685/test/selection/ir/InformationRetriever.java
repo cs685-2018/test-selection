@@ -1,10 +1,9 @@
 package cs685.test.selection.ir;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Stack;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.ScoreDoc;
@@ -24,8 +24,6 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 
 import hudson.FilePath;
-import io.reflectoring.diffparser.api.DiffParser;
-import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
 import io.reflectoring.diffparser.api.model.Hunk;
 import io.reflectoring.diffparser.api.model.Line;
@@ -118,27 +116,42 @@ public class InformationRetriever {
 			}
 		}
 		
+		// Get filename for each diff
+		Map<String, Diff> filenameToDiff = new HashMap<String, Diff>();
+		for (Diff diff : diffs) {
+			String toFile = diff.getToFileName();
+			if (toFile.endsWith(".java")) {
+				List<String> fileSplit = Arrays.asList(toFile.split("/"));
+				// Only parse Java files
+				fileSplit.remove(0);
+				filenameToDiff.put(String.join("/", fileSplit), diff); // path: src/.../<Java file>
+			}
+		}
+		
+		// Get FilePath object for each diff
+		Map<Diff, FilePath> diffToFilePath = new HashMap<Diff, FilePath>();
+		Stack<FilePath> filesToProcess = new Stack<>();
+		while (!filesToProcess.isEmpty()) {
+			FilePath currPath = filesToProcess.pop();
+			if (currPath.isDirectory()) {
+				filesToProcess.addAll(currPath.list());
+			} else if (currPath.getName().endsWith(".java")) {
+				// Check if file is in our filenameToDiff map
+				String currFile = currPath.getRemote();
+				if (filenameToDiff.containsKey(currFile)) {
+					// Add the FilePath to diffToFilePath
+					diffToFilePath.put(filenameToDiff.get(currFile), currPath);
+				}
+			}
+		}
+		
 		queries = new ArrayList<Query>();
 		// Build the queries from each diff
 		// TODO: add logger that works with Jenkins?
-		for (Diff diff : diffs) {
+		for (Diff diff : diffToFilePath.keySet()) {
 			Map<String, List<Range>> classToRange = new HashMap<String, List<Range>>();
 			Map<String, List<Range>> methodToRange = new HashMap<String, List<Range>>();
-			String toFile = diff.getToFileName();
-			System.out.println("Found diff at " + toFile);
-			// Replace the prepended "b/" from with "input"/:
-			List<String> fileSplit = Arrays.asList(toFile.split("/"));
-			// Only parse Java files
-			if (!toFile.endsWith(".java")) {
-				continue;
-			}
-			// TODO: remove the fileSplit code, find the file via FilePath root that matches with our toFile
-			fileSplit.set(0, "input");
-			toFile = String.join("/", fileSplit);
-			System.out.println("Parsing ToFile at: [" + toFile + "]");
-			// Parse the file with JavaParser
-			File file = new File(toFile);
-			CompilationUnit cu = JavaParser.parse(file);
+			CompilationUnit cu = JavaParser.parse(diffToFilePath.get(diff).read());
 
 			// Find line number ranges of all declared classes
 			System.out.println("Classes:");
@@ -293,17 +306,4 @@ public class InformationRetriever {
 	public void close() throws IOException {
 		indexer.close();
 	}
-	
-	// TODO: delete me when code is merged
-	public static void main(String[] args) throws URISyntaxException, IOException, ParseException {
-		// Things left in here that may be needed for TestGeneration...
-		// Parse the diff
-		DiffParser parser = new UnifiedDiffParser();
-		InputStream in = new FileInputStream(
-				"C:\\Users\\smoke\\Documents\\CS 685\\cs685-2018\\information-retrieval\\input\\test.diff");
-		List<Diff> diffs = parser.parse(in);
-		// ...
-	}
-		
-		
 }
