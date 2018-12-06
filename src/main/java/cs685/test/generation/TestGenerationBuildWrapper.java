@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Stack;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import javax.annotation.Nonnull;
 
@@ -98,9 +100,13 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                     writer.close();
                 }
                 //maven code is gonna go here
-
-		runCommand("mvn -Dtest key + '#'+String.join('+',selectedTestsMapper.get(key))",
-                new File("/my/working/dir/"));
+		//Path currentRelativePath = Paths.get("");
+		//String absolutePath = currentRelativePath.toAbsolutePath().toString();
+		//String tests = "#"+ String.join('+',selectedTestsMapper.get(key)) ;
+		String absolutePath = "example/src/test/java/example"; 				
+		String command = "mvn -Dtest = FeedsWalrusTest#test";
+		//"mvn -Dtest key +" + tests;		
+		runCommand(command, new File(absolutePath));
 	
 		return super.tearDown(build, listener);
 			}
