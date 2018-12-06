@@ -33,12 +33,17 @@ import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
 
+/**
+ * 
+ * @author Ryan, Dan
+ *
+ */
 public class TestGenerationBuildWrapper extends BuildWrapper {
 
     private static final String REPORT_TEMPLATE_PATH = "/stats.html";
     private static final String PROJECT_NAME_VAR = "$PROJECT_NAME$";
     private static final String SELECTED_TESTS_VAR = "$SELECTED_TESTS$";
-
+    
     @DataBoundConstructor
     public TestGenerationBuildWrapper() {
     }
@@ -51,7 +56,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             public boolean tearDown(AbstractBuild build, BuildListener listener)
               throws IOException, InterruptedException
             {
-            	// Maven findbugs believes build.getWorkspace returns (or potentially returns) null at some point
+            	// TODO: Maven findbugs believes build.getWorkspace returns (or potentially returns) null at some point
             	// Error given is "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"
             	if (build == null) {
             		throw new NullPointerException("TestGenerationBuildWrapper.setUp.tearDown: AbstractBuild object is null.");
@@ -61,10 +66,11 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             	}
             	
             	// Get the selected tests
-            	// TODO: change n (5) to be a tunable parameter by the user
+            	// TODO: change n (10) to be a tunable parameter by the user
+            	int n = 10;
             	Set<String> selectedTests = null;
                 try {
-					selectedTests = getSelectedTests(build.getWorkspace(), build, 5);
+					selectedTests = getSelectedTests(build.getWorkspace(), build, n);
 				} catch (ParseException e) {
 					System.out.println("Error while parsing Java project:");
 					e.printStackTrace();
@@ -74,7 +80,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 Map<String, List<String>> selectedTestsMapper = new HashMap<String, List<String>>();
                 for (String selectedTest : selectedTests) {
                 	String[] selectedTestSplit = selectedTest.split("\\.");
-                	if (selectedTest.length() != 2) {
+                	if (selectedTestSplit.length != 2) {
                 		System.out.println("Error with selected test <class>.<method> name: [" + selectedTest + "]");
                 	} else {
                 		String className = selectedTestSplit[0];
@@ -96,20 +102,20 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 	testSelection.append(className);
                 	testSelection.append("#");
                 	testSelection.append(String.join("+", selectedTestsMapper.get(className)));
-                	// TODO: How to separate classes for maven?
-                	// For now, separate by comma
+                	// Separate classes by comma (should work for maven-surefire 2.19+
                 	if (i+1 < selectedTestsMapper.keySet().size()) {
-                		testSelection.append(", ");
+                		testSelection.append(",");
                 	}
                 }
                 System.out.println("Test selection string=[" + testSelection.toString() + "]");
                 
-                // TODO: execute selected tests
+                
                 // Temporary method to display selected tests
-                String report = generateReport(build.getProject().getDisplayName(), testSelection.toString());
+                String report = generateReport(build.getProject().getDisplayName(), selectedTestsMapper);//testSelection.toString());
+                
+                // TODO: execute selected tests
                 
                 // TODO: old method to generate the report
-                //String report = generateReport(build.getProject().getDisplayName());
                 File artifactsDir = build.getArtifactsDir();
                 if (!artifactsDir.isDirectory()) {
                     boolean success = artifactsDir.mkdirs();
@@ -129,30 +135,46 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         };
     }
 
-    // TODO: redo this method to return something else - DONE?
+    /**
+     * 
+     * @param root
+     * @param build
+     * @param n
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws ParseException
+     */
     private static Set<String> getSelectedTests(FilePath root, AbstractBuild build, int n) throws IOException, InterruptedException, ParseException {
-    	HashMap<String, List<String>> classMap = new HashMap<String, List<String>>();
     	FilePath workspaceDir = root;
     	System.out.println("***TestGenerationBuildWrapper.buildStats.root (FilePath): " + workspaceDir);
     	
     	// Build the test selector (TODO: rename? used to get diffs?)
-    	TestGeneration testSelector = new TestGeneration(classMap, workspaceDir, build);
+    	TestGeneration testSelector = new TestGeneration(workspaceDir, build);
     	
     	// Get the list of diffs
     	DiffParser parser = new UnifiedDiffParser();
         InputStream in = new ByteArrayInputStream(testSelector.getDifferences().getBytes());
         List<Diff> diffs = parser.parse(in);
+        System.out.println("We parsed out " + Integer.toString(diffs.size()) + " diffs!");
         
         // Create the information retriever
-    	InformationRetriever ir = new InformationRetriever(root, diffs);
+    	InformationRetriever ir = new InformationRetriever(root, diffs, build.getWorkspace().getName());
     	
         Set<String> selectedTests = ir.getTestDocuments(n);
         ir.close();
         return selectedTests;
     }
 
-    // TODO: old function to generate the HTML report file
-    private static String generateReport(String projectName, String selectedTests) throws IOException {
+    // TODO: display results differently
+    /**
+     * 
+     * @param projectName
+     * @param selectedTests
+     * @return
+     * @throws IOException
+     */
+    private static String generateReport(String projectName, Map<String, List<String>> selectedTests) throws IOException {// String selectedTests) throws IOException {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         try (InputStream in = TestGenerationBuildWrapper.class.getResourceAsStream(REPORT_TEMPLATE_PATH)) {
             byte[] buffer = new byte[1024];
@@ -163,23 +185,19 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         }
         String content = new String(bOut.toByteArray(), StandardCharsets.UTF_8);
         content = content.replace(PROJECT_NAME_VAR, projectName);
-        content = content.replace(SELECTED_TESTS_VAR, selectedTests);
+        StringBuilder selectedTestsContent = new StringBuilder();
+        for (String className : selectedTests.keySet()) {
+        	selectedTestsContent.append("<tr><td>");
+        	selectedTestsContent.append(className);
+        	selectedTestsContent.append("</td><td></td></tr>\n");
+        	for (String methodName : selectedTests.get(className)) {
+        		selectedTestsContent.append("<tr><td></td><td>");
+        		selectedTestsContent.append(methodName);
+        		selectedTestsContent.append("</td></tr>\n");
+        	}
+        }
+        content = content.replace(SELECTED_TESTS_VAR, selectedTestsContent);
                 
-        /*InformationRetriever.stopwords = new HashSet<String>();
-        InformationRetriever.keywords = new HashSet<String>();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				InformationRetriever.class.getResourceAsStream(InformationRetriever.STOPWORDS_FILENAME)))) {
-			for (String line; (line = br.readLine()) != null;) {
-				InformationRetriever.stopwords.add(line.replaceAll("\\'", "")); // remove single quotes
-			}
-		}
-		try (BufferedReader br = new BufferedReader(new InputStreamReader(
-				InformationRetriever.class.getResourceAsStream(InformationRetriever.KEYWORDS_FILENAME)))) {
-			for (String line; (line = br.readLine()) != null;) {
-				InformationRetriever.keywords.add(line);
-			}
-		}*/
-        
         return content;
     }
 
