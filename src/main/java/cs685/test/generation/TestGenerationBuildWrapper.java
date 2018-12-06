@@ -133,7 +133,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 System.out.println(absolutePath);		
                 for (String className : selectedTestsMapper.keySet()) {
                 	testSelection.append(className);
-			String tests = "test -Dtest=" + className + "#"+ String.join("+",selectedTestsMapper.get(className));   
+			String tests = "test -DfailIfNoTests=false  -Dtest=" + className + "#"+ String.join("+",selectedTestsMapper.get(className));   
             	        try {
 		        	mavenOutput += runCommand(tests, new File(absolutePath));
 		        } catch (MavenInvocationException e) {
