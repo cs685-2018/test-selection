@@ -121,10 +121,7 @@ public class InformationRetriever {
 		for (Diff diff : diffs) {
 			String toFile = diff.getToFileName();
 			if (toFile.endsWith(".java")) {
-				List<String> fileSplit = Arrays.asList(toFile.split("/"));
-				// Only parse Java files
-				fileSplit.remove(0);
-				filenameToDiff.put(String.join("/", fileSplit), diff); // path: src/.../<Java file>
+				filenameToDiff.put(toFile.replaceAll("b\\/", ""), diff);
 			}
 		}
 		
@@ -289,15 +286,11 @@ public class InformationRetriever {
 		// Loop over all our queries
 		for (Query query : queries) {
 			// Find top n documents
-			TopDocs topDocs = indexer.query(query.getQuery(), n);
+			List<TestCase> topDocs = indexer.getHits(query.getQuery(), n);
 			System.out.println("Query: [" + query.getQuery() + "]");
 			System.out.println("\tCovers: " + query.getCoverages());
-			System.out.println("\tResults: " + topDocs.totalHits);
-			for (ScoreDoc doc : topDocs.scoreDocs) {
-				System.out.println("\t" + doc);
-				String docName = indexer.getDocumentById(doc.doc);
-				System.out.println("\tName=[" + docName + "]");
-				results.add(docName);
+			for (TestCase testCase : topDocs) {
+				results.add(testCase.getClassName() + "." + testCase.getMethodName());
 			}
 		}
 		return results;
