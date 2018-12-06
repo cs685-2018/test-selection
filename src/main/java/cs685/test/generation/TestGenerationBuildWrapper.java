@@ -107,6 +107,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		String command = "mvn -Dtest = FeedsWalrusTest#test";
 		//"mvn -Dtest key +" + tests;		
 		runCommand(command, new File(absolutePath));
+		System.out.println(command + " was the command");
 	
 		return super.tearDown(build, listener);
 			}
