@@ -2,7 +2,6 @@ package cs685.test.selection.ir;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -10,13 +9,12 @@ import java.util.Stack;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -54,6 +52,8 @@ public class Indexer {
 	private static final String CONTENT_FIELD = "content";
 	private static final String ID_FIELD = "id";
 	private static final String[] FIELDS = new String[] {CLASS_NAME_FIELD, METHOD_NAME_FIELD, CONTENT_FIELD, ID_FIELD };
+	
+	private static final org.apache.lucene.document.Field.Store STORE = org.apache.lucene.document.Field.Store.YES;
 	
 	private File indexPath = new File(Jenkins.getInstance().getRootDir(), "luceneIndex");
 	
@@ -181,13 +181,13 @@ public class Indexer {
 							// document.add(new TextField(method.getName().asString() + " content", new StringReader(methodContent.toString())));
 							//id
 							String id = "blah";
-							document.add(new TextField(ID_FIELD, new StringReader(id)));
+							document.add(new TextField(ID_FIELD, id, STORE));
 							//classname
-							document.add(new TextField(CLASS_NAME_FIELD, new StringReader(className)));
+							document.add(new TextField(CLASS_NAME_FIELD, className, STORE));
 							//methodname
-							document.add(new TextField(METHOD_NAME_FIELD, new StringReader(methodName)));
+							document.add(new TextField(METHOD_NAME_FIELD, methodName, STORE));
 							//content
-							document.add(new TextField(CONTENT_FIELD, new StringReader(methodContent.toString())));
+							document.add(new TextField(CONTENT_FIELD, methodContent.toString(), STORE));
 							
 							dbWriter.addDocument(document);
 							/*if (testDocuments.containsValue(methodName)) {
