@@ -6,24 +6,12 @@
 </head>
 <body>
 <h1>Project $PROJECT_NAME$:</h1>
-<p><h2>Test cases:</h2></p>
-<p>
-	<table border="1">
-		<tr>
-			<th>Class names</th>
-			<th>Method names</th>
-		</tr>
-		$CLASS_METHOD_CONTENT$
-	</table>
-</p>
-<p>
-	$GIT_COMMITS$
-</p>
-<p>
-	$GIT_DIFFS$
-</p>
-<p>
-	$DIFF_PARSER$
-</p>
+<h2>Selected tests:</h2>
+<table border="1">
+<tr><td><strong>Test Class</strong></td><td><strong>Test Method</strong></td></tr>
+$SELECTED_TESTS$
+</table>
+<p><strong>Maven output:</strong></p>
+<p>$MAVEN_OUTPUT$</p>
 </body>
 </html>
