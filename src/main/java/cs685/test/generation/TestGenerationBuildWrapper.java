@@ -125,38 +125,39 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 // Generate the Maven test selection string
                 StringBuilder testSelection = new StringBuilder();
                 int i = 0;
-		
 
-		String mavenOutput = "";
-		Path currentRelativePath = Paths.get("");
-                String absolutePath = build.getWorkspace().getRemote();
-                System.out.println(absolutePath);		
-                for (String className : selectedTestsMapper.keySet()) {
-                	testSelection.append(className);
-			String tests = "test -DfailIfNoTests=false  -Dtest=" + className + "#"+ String.join("+",selectedTestsMapper.get(className));   
-            	        try {
-		        	mavenOutput += runCommand(tests, new File(absolutePath));
-		        } catch (MavenInvocationException e) {
-		            // TODO Auto-generated catch block
-			    mavenOutput += "no output";
-			    e.printStackTrace();
-			}
-			testSelection.append("#");
-                	testSelection.append(String.join("+", selectedTestsMapper.get(className)));
-                	// Separate classes by comma (should work for maven-surefire 2.19+
-                	if (i+1 < selectedTestsMapper.keySet().size()) {
-                		testSelection.append(",");	
-                	}
-			i++;
-                }
-                System.out.println("Test selection string=[" + testSelection.toString() + "]");
+                // Builds an output log of the mavenOutput
+				StringBuilder mavenOutput = new StringBuilder();
+		        String absolutePath = build.getWorkspace().getRemote();
+		        System.out.println(absolutePath);		
+		        for (String className : selectedTestsMapper.keySet()) {
+		        	for (String methodName : selectedTestsMapper.get(className)) {
+		        		String command = "test -DfailIfNoTests=false -Dtest=" + className + "#" + methodName;
+		        		try {
+				        	mavenOutput.append(runCommand(command, new File(absolutePath)));
+				        } catch (MavenInvocationException e) {
+		    			    mavenOutput.append("<br/><font color=\"red\"><strong>TEST FAILED: ");
+		    			    mavenOutput.append(className).append(".").append(methodName).append("</strong></font><br/>");
+		    			    e.printStackTrace();
+		    			}
+		        	}
+		        	// Code for using maven-surefire 2.19+
+		        	testSelection.append(className).append("#");
+		        	testSelection.append(String.join("+", selectedTestsMapper.get(className)));
+		        	// Separate classes by comma (should work for maven-surefire 2.19+)
+		        	if (i+1 < selectedTestsMapper.keySet().size()) {
+		        		testSelection.append(",");	
+		        	}
+		        	i++;
+		        }
+		        System.out.println("Test selection string=[" + testSelection.toString() + "]");
                 
                 // TODO: execute selected tests
 
 	
                 
                 // Temporary method to display selected tests
-                String report = generateReport(build.getProject().getDisplayName(), selectedTestsMapper, mavenOutput);//testSelection.toString());
+                String report = generateReport(build.getProject().getDisplayName(), selectedTestsMapper, mavenOutput.toString());//testSelection.toString());
                 
                 // TODO: old method to generate the report
                 File artifactsDir = build.getArtifactsDir();
@@ -174,7 +175,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                     writer.close();
                 }
 	
-		return super.tearDown(build, listener);
+                return super.tearDown(build, listener);
 			}
         };
 
