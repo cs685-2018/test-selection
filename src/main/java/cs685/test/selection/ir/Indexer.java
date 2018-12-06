@@ -16,6 +16,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -110,7 +111,9 @@ public class Indexer {
 		// Iterate over the entire directory
 		Stack<FilePath> toProcess = new Stack<>();
         toProcess.push(root);
-        int docId = 0;
+        int ignoredFiles = 0;
+        int testCaseMethods = 0;
+        int nonTestCaseMethods = 0;
         while (!toProcess.isEmpty()) {
             FilePath path = toProcess.pop();
             if (path.isDirectory()) {
@@ -186,22 +189,35 @@ public class Indexer {
 							//content
 							document.add(new TextField(CONTENT_FIELD, new StringReader(methodContent.toString())));
 							
-							System.out.println("Doc=" + docId + ", name=" + method.getName().asString());
-							
 							dbWriter.addDocument(document);
 							/*if (testDocuments.containsValue(methodName)) {
 								System.out.println("***WARNING***: Found an overloaded test method: [" + methodName + "]");
 							}*/
 							//testDocuments.put(docId, className + "." + methodName);
 							//docId++;
+							testCaseMethods++;
+						} else {
+							nonTestCaseMethods++;
 						}
 					}
 				}
 			} else {
-				System.out.println("Ignoring non-Java file: [" + path.getName() + "]");
+				ignoredFiles++;
 			}
 		}
+        
+        System.out.println(Integer.toString(testCaseMethods) + " test case methods found.");
+        System.out.println(Integer.toString(nonTestCaseMethods) + " other methods found.");
+        System.out.println(Integer.toString(ignoredFiles) + " non-Java files found.");
 
+        for (int i = 0; i < reader.maxDoc(); i++) {
+        	//dont care about deletions for now...
+        	Document d = reader.document(i);
+        	System.out.println("Document["+Integer.toString(i)+"]: class=[" + d.get(CLASS_NAME_FIELD)+"], method=["+
+        			d.get(METHOD_NAME_FIELD)+"]");
+        }
+        
+        
 		//writer.commit(); // commits pending documents to index
 		//reader = DirectoryReader.open(indexDir);
 		//searcher = new IndexSearcher(reader);
