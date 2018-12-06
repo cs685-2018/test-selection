@@ -106,6 +106,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		String absolutePath = "example/src/test/java/example"; 				
 		String command = "mvn -Dtest = FeedsWalrusTest#test";
 		//"mvn -Dtest key +" + tests;		
+		System.out.println("test 1");
 		runCommand(command, new File(absolutePath));
 		System.out.println(command + " was the command");
 	
@@ -261,11 +262,15 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     }
 
 	public void runCommand(String mavenCommand, File workingDirectory) {
+		System.out.println("test 2");
 		InvocationRequest request = new DefaultInvocationRequest();
+		System.out.println("test 3");
 		request.setPomFile(new File(workingDirectory, "pom.xml"));
+		System.out.println("test 4");
 		request.setGoals(Collections.singletonList(mavenCommand));
 	 
 		Invoker invoker = new DefaultInvoker();
+		System.out.println("test 1");
 		final StringBuilder mavenOutput = new StringBuilder();
 		invoker.setOutputHandler(new InvocationOutputHandler() {
 	 
