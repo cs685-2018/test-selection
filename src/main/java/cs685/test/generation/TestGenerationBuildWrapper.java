@@ -261,7 +261,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         return content;
     }
 
-	public void runCommand(String mavenCommand, File workingDirectory) {
+	public void runCommand(String mavenCommand, File workingDirectory) throws MavenInvocationException {
 		InvocationRequest request = new DefaultInvocationRequest();
 		request.setPomFile( new File( "/path/to/pom.xml" ) );
 		request.setGoals( Collections.singletonList( "install" ) );
