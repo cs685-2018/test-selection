@@ -1,43 +1,58 @@
 package cs685.test.selection.ir;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import hudson.FilePath;
-import hudson.model.Item;
-import jenkins.model.Jenkins;
 
+/**
+ * 
+ * @author Ryan
+ *
+ */
 public class IndexManager {
 	private transient Indexer instance;
 	private FilePath root;
+	private String projectName;
+	private Set<String> filesToUpdate;
 	
+	/**
+	 * 
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	private synchronized Indexer getIndexer() throws IOException, InterruptedException {
 		if (instance == null) {
-			instance = new Indexer(root);
+			instance = new Indexer(root, projectName, filesToUpdate);
 		}
 		return instance;
 	}
 	
-	public IndexManager(FilePath root) {
+	/**
+	 * 
+	 * @param root
+	 * @param projectName
+	 * @param filesToUpdate
+	 */
+	public IndexManager(FilePath root, String projectName, Set<String> filesToUpdate) {
 		this.root = root;
+		this.projectName = projectName;
+		this.filesToUpdate = filesToUpdate;
 	}
-	//TODO: may need to implement other methods
+	
+	/**
+	 * 
+	 * @param query
+	 * @param n
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public List<TestCase> getHits(String query, int n) throws IOException, InterruptedException {
         List<TestCase> hits = getIndexer().getHits(query, n);
         return hits;
-        /* do we need this code??
-        Jenkins jenkins = Jenkins.getInstance(); // TODO: is this just getting the information on a Jenkins build?
-        Iterator<TestCase> iter = hits.iterator();
-        while (iter.hasNext()) {
-            TestCase searchItem = iter.next();
-            // We may not need this jenkins stuff
-            Item item = jenkins.getItem(searchItem.getId().toString()); // was .getProjectName()
-            if (item == null) {
-                iter.remove();
-            }
-        }
-        return hits;*/
     }
 	
 	public void close() throws IOException, InterruptedException {

@@ -31,7 +31,6 @@ import io.reflectoring.diffparser.api.model.Range;
  *
  */
 public class InformationRetriever {
-	// TODO: move these to another class/file?
 	// Static member variables
 	private static final String STOPWORDS_FILENAME = "/stopwords.txt";
 	private static final String KEYWORDS_FILENAME = "/keywords.txt";
@@ -86,7 +85,7 @@ public class InformationRetriever {
 	 * @throws IOException
 	 * @throws InterruptedException 
 	 */
-	public InformationRetriever(FilePath root, List<Diff> diffs) throws IOException, InterruptedException {
+	public InformationRetriever(FilePath root, List<Diff> diffs, String projectName) throws IOException, InterruptedException {
 		// TODO: for each code change line:
 			// Find the line that matches in Javaparser tree (either by line number match (preferably) or string match)
 			// Use Javaparser to determine if any comments are associated with the line
@@ -112,18 +111,33 @@ public class InformationRetriever {
 			}
 		}
 		
+		System.out.println("Stopwords size: " + Integer.toString(stopwords.size()));
+		System.out.println("Keywords size: " + Integer.toString(keywords.size()));
+		
+		// A list of the files that may need to be updated (if an index already exists)
+		Set<String> filesToUpdate = new HashSet<String>();
+		
 		// Get filename for each diff
 		Map<String, Diff> filenameToDiff = new HashMap<String, Diff>();
+		System.out.println("Creating filenameToDiff map");
 		for (Diff diff : diffs) {
 			String toFile = diff.getToFileName();
+			System.out.println("Processing diff for " + toFile);
 			if (toFile.endsWith(".java")) {
-				filenameToDiff.put(toFile.replaceAll("b\\/", ""), diff);
+				String filename = toFile.replaceAll("b\\/", "");
+				filenameToDiff.put(filename, diff);
+				filesToUpdate.add(filename);
+				System.out.println("Inserted diff for file [" + toFile.replaceAll("b\\/", "") + "] into map");
 			}
 		}
 		
+		System.out.println("filenameToDiff map has " + Integer.toString(filenameToDiff.size()) + " files!");
+		
 		// Get FilePath object for each diff
 		Map<Diff, FilePath> diffToFilePath = new HashMap<Diff, FilePath>();
+		System.out.println("Creating diffToFilePath map!");
 		Stack<FilePath> filesToProcess = new Stack<>();
+		filesToProcess.push(root);
 		while (!filesToProcess.isEmpty()) {
 			FilePath currPath = filesToProcess.pop();
 			if (currPath.isDirectory()) {
@@ -131,16 +145,33 @@ public class InformationRetriever {
 			} else if (currPath.getName().endsWith(".java")) {
 				// Check if file is in our filenameToDiff map
 				String currFile = currPath.getRemote();
-				if (filenameToDiff.containsKey(currFile)) {
+				System.out.println("Found Java file: [" + currPath.getName() + "]");
+				System.out.println("getRemote(): [" + currPath.getRemote() + "]");
+				String currFilePathSplit[] = currPath.getRemote().split(projectName);
+				String currFilePath = null;
+				if (currFilePathSplit.length != 2) {
+					System.out.println("ERROR: File not in project's directory?");
+				} else {
+					currFilePath = currFilePathSplit[1].substring(1); // remove the leading forward slash
+				}
+				System.out.println("modified: [" + currFilePath + "]");
+				if (filenameToDiff.containsKey(currFilePath)) {
 					// Add the FilePath to diffToFilePath
-					diffToFilePath.put(filenameToDiff.get(currFile), currPath);
+					System.out.println("We found a matching FilePath! [" + currFile + "]");
+					diffToFilePath.put(filenameToDiff.get(currFilePath), currPath);
 				}
 			}
 		}
 		
+		System.out.println("diffToFilePath map has " + Integer.toString(diffToFilePath.size()) + " FilePaths!");
+		
 		queries = new ArrayList<Query>();
 		// Build the queries from each diff
 		// TODO: add logger that works with Jenkins?
+		System.out.println("Processing diffs:");
+		for (Diff diff : diffToFilePath.keySet()) {
+			System.out.println("\t" + diff);
+		}
 		for (Diff diff : diffToFilePath.keySet()) {
 			Map<String, List<Range>> classToRange = new HashMap<String, List<Range>>();
 			Map<String, List<Range>> methodToRange = new HashMap<String, List<Range>>();
@@ -259,14 +290,16 @@ public class InformationRetriever {
 			}
 		}
 		
+		System.out.println("We created " + Integer.toString(queries.size()) + " queries!");
+		
 		// TODO: change to logging so we can check our queries
 		System.out.println("Queries:");
 		for (Query query : queries) {
 			System.out.println("\t" + query);
 		}
 		
-		// Create an indexer of all test files within the project
-		indexManager = new IndexManager(root);
+		// Create/update the indexer of all test files within the project
+		indexManager = new IndexManager(root, projectName, filesToUpdate);
 	}
 	
 	/**
@@ -293,6 +326,11 @@ public class InformationRetriever {
 		return results;
 	}
 	
+	/**
+	 * 
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public void close() throws IOException, InterruptedException {
 		indexManager.close();
 	}
