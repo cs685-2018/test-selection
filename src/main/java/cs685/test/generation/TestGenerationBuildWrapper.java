@@ -4,16 +4,21 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.util.Collections;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays; 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import javax.annotation.Nonnull;
 
@@ -32,6 +37,16 @@ import hudson.tasks.BuildWrapperDescriptor;
 import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.InvocationOutputHandler;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
+import org.apache.maven.shared.invoker.Invoker;
+import org.apache.maven.shared.invoker.MavenInvocationException;
+
+
+
 
 /**
  * 
@@ -43,6 +58,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     private static final String REPORT_TEMPLATE_PATH = "/stats.html";
     private static final String PROJECT_NAME_VAR = "$PROJECT_NAME$";
     private static final String SELECTED_TESTS_VAR = "$SELECTED_TESTS$";
+    private static final String MAVEN_OUTPUT_VAR = "$MAVEN_OUTPUT$";
     
     @DataBoundConstructor
     public TestGenerationBuildWrapper() {
@@ -109,11 +125,24 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 }
                 System.out.println("Test selection string=[" + testSelection.toString() + "]");
                 
+                // TODO: execute selected tests
+                Path currentRelativePath = Paths.get("");
+                String absolutePath = currentRelativePath.toAbsolutePath().toString();
+                //build.getWorkspace()
+                System.out.println(absolutePath);
+                String command = "-Dtest = FeedsWalrusTest#test";
+                //"mvn -Dtest key +" + tests;		
+                String mavenOutput = "";
+                try {
+                    mavenOutput = runCommand(command, new File(absolutePath));
+                } catch (MavenInvocationException e) {
+                    // TODO Auto-generated catch block
+                    mavenOutput = "no output";
+                    e.printStackTrace();
+                }
                 
                 // Temporary method to display selected tests
-                String report = generateReport(build.getProject().getDisplayName(), selectedTestsMapper);//testSelection.toString());
-                
-                // TODO: execute selected tests
+                String report = generateReport(build.getProject().getDisplayName(), selectedTestsMapper, mavenOutput);//testSelection.toString());
                 
                 // TODO: old method to generate the report
                 File artifactsDir = build.getArtifactsDir();
@@ -130,9 +159,11 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                     writer.write(report);
                     writer.close();
                 }
-                return super.tearDown(build, listener);
-            }
+	
+		return super.tearDown(build, listener);
+			}
         };
+
     }
 
     /**
@@ -174,7 +205,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
      * @return
      * @throws IOException
      */
-    private static String generateReport(String projectName, Map<String, List<String>> selectedTests) throws IOException {// String selectedTests) throws IOException {
+    private static String generateReport(String projectName, Map<String, List<String>> selectedTests, String mavenOutput) throws IOException {// String selectedTests) throws IOException {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         try (InputStream in = TestGenerationBuildWrapper.class.getResourceAsStream(REPORT_TEMPLATE_PATH)) {
             byte[] buffer = new byte[1024];
@@ -197,9 +228,43 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         	}
         }
         content = content.replace(SELECTED_TESTS_VAR, selectedTestsContent);
+
+        // Display Maven output
+        content = content.replace(MAVEN_OUTPUT_VAR, mavenOutput);
                 
         return content;
     }
+
+	public String runCommand(String mavenCommand, File workingDirectory) throws MavenInvocationException {	
+		InvocationRequest request = new DefaultInvocationRequest();
+		request.setPomFile(new File(workingDirectory, "pom.xml"));
+
+
+		List<String> goals= new ArrayList<String>(); goals.add(mavenCommand); goals.add("test");
+		
+		request.setGoals(Collections.singletonList(mavenCommand));
+	 	Invoker invoker = new DefaultInvoker();			
+		final StringBuilder mavenOutput = new StringBuilder();
+		invoker.setOutputHandler(new InvocationOutputHandler() {
+		    public void consumeLine(String line) {
+		        mavenOutput.append(line).append(System.lineSeparator());
+		    }
+		});
+		// You can find the Maven home by calling "mvn --version"
+		invoker.setMavenHome(new File("/usr/share/maven"));
+		try {
+		    InvocationResult invocationResult = invoker.execute(request);
+
+		    // Process maven output
+		    System.out.println(mavenOutput);
+		    if (invocationResult.getExitCode() != 0) {
+		        // handle error
+		    }
+		} catch (MavenInvocationException e) {
+		    e.printStackTrace();
+		}
+		return mavenOutput.toString();	
+	    }
 
     @Extension
     public static final class DescriptorImpl extends BuildWrapperDescriptor {

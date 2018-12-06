@@ -86,10 +86,15 @@
         </dependency>
         <!-- Javaparser -->
         <dependency>
-		    <groupId>com.github.javaparser</groupId>
-		    <artifactId>javaparser-symbol-solver-core</artifactId>
-		    <version>3.6.26</version>
-		</dependency>
+	    <groupId>com.github.javaparser</groupId>
+	    <artifactId>javaparser-symbol-solver-core</artifactId>
+	    <version>3.6.26</version>
+	</dependency>
+	<dependency>
+	  <groupId>org.apache.maven.shared</groupId>
+	  <artifactId>maven-invoker</artifactId>
+	  <version>3.0.1</version>
+	</dependency>
 		<!-- Parsing git diffs -->
 		<dependency>
 			<groupId>io.reflectoring.diffparser</groupId>
