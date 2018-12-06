@@ -1,28 +1,35 @@
 package cs685.test.generation;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.util.Collections;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays; 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import javax.annotation.Nonnull;
 
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.InvocationOutputHandler;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
+import org.apache.maven.shared.invoker.Invoker;
+import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import cs685.test.selection.ir.InformationRetriever;
@@ -37,27 +44,6 @@ import hudson.tasks.BuildWrapperDescriptor;
 import io.reflectoring.diffparser.api.DiffParser;
 import io.reflectoring.diffparser.api.UnifiedDiffParser;
 import io.reflectoring.diffparser.api.model.Diff;
-import org.apache.maven.shared.invoker.DefaultInvocationRequest;
-import org.apache.maven.shared.invoker.DefaultInvoker;
-import org.apache.maven.shared.invoker.InvocationOutputHandler;
-import org.apache.maven.shared.invoker.InvocationRequest;
-import org.apache.maven.shared.invoker.InvocationResult;
-import org.apache.maven.shared.invoker.Invoker;
-import org.apache.maven.shared.invoker.MavenInvocationException;
-
-
-
-import org.apache.maven.shared.invoker.DefaultInvocationRequest;
-import org.apache.maven.shared.invoker.DefaultInvoker;
-import org.apache.maven.shared.invoker.InvocationOutputHandler;
-import org.apache.maven.shared.invoker.InvocationRequest;
-import org.apache.maven.shared.invoker.InvocationResult;
-import org.apache.maven.shared.invoker.Invoker;
-import org.apache.maven.shared.invoker.MavenInvocationException;
-
-
-
-
 
 /**
  * 
@@ -66,10 +52,13 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
  */
 public class TestGenerationBuildWrapper extends BuildWrapper {
 
+	private static final String PLUGIN_DISPLAY_NAME = "Use Test Selection";
     private static final String REPORT_TEMPLATE_PATH = "/stats.html";
+    private static final String TEST_RESULTS_PATH = "/test_results.html";
     private static final String PROJECT_NAME_VAR = "$PROJECT_NAME$";
     private static final String SELECTED_TESTS_VAR = "$SELECTED_TESTS$";
     private static final String MAVEN_OUTPUT_VAR = "$MAVEN_OUTPUT$";
+    private static final String TEST_RESULTS_VAR = "$TEST_RESULTS$";
     
     @DataBoundConstructor
     public TestGenerationBuildWrapper() {
@@ -235,12 +224,16 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         for (String className : selectedTests.keySet()) {
         	selectedTestsContent.append("<tr><td>");
         	selectedTestsContent.append(className);
-        	selectedTestsContent.append("</td><td></td></tr>\n");
+        	selectedTestsContent.append("</td><td>");
+        	int i = 0;
         	for (String methodName : selectedTests.get(className)) {
-        		selectedTestsContent.append("<tr><td></td><td>");
         		selectedTestsContent.append(methodName);
-        		selectedTestsContent.append("</td></tr>\n");
+        		if (i+1 < selectedTests.get(className).size()) {
+        			selectedTestsContent.append("<br/>");
+        		}
+        		i++;
         	}
+        	selectedTestsContent.append("</td></tr>\n");
         }
         content = content.replace(SELECTED_TESTS_VAR, selectedTestsContent);
 
@@ -292,7 +285,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return "Use test generation";
+            return PLUGIN_DISPLAY_NAME;
         }
     }
 }
