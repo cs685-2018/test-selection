@@ -270,16 +270,19 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		request.setGoals(Collections.singletonList(mavenCommand));
 	 
 		Invoker invoker = new DefaultInvoker();
-		System.out.println("test 1");
+		System.out.println("test 5");
 		final StringBuilder mavenOutput = new StringBuilder();
+		System.out.println("test 6");
 		invoker.setOutputHandler(new InvocationOutputHandler() {
-	 
+	 System.out.println("test 7");
 		    public void consumeLine(String line) {
 		        mavenOutput.append(line).append(System.lineSeparator());
 		    }
 		});
 		// You can find the Maven home by calling "mvn --version"
+		System.out.println("test 8");
 		invoker.setMavenHome(new File("/usr/local/Cellar/maven/3.3.3/libexec"));
+		System.out.println("test 9");
 		try {
 		    InvocationResult invocationResult = invoker.execute(request);
 		    // Process maven output
