@@ -106,7 +106,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		String absolutePath = "example/src/test/java/example"; 				
 		String command = "mvn -Dtest = FeedsWalrusTest#test";
 		//"mvn -Dtest key +" + tests;		
-		System.out.println("test 1");
+
 		runCommand(command, new File(absolutePath));
 		System.out.println(command + " was the command");
 	
@@ -262,29 +262,29 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     }
 
 	public void runCommand(String mavenCommand, File workingDirectory) {
-		System.out.println("test 2");
 		InvocationRequest request = new DefaultInvocationRequest();
-		System.out.println("test 3");
+		request.setPomFile( new File( "/path/to/pom.xml" ) );
+		request.setGoals( Collections.singletonList( "install" ) );
+		 
+		Invoker invoker = new DefaultInvoker();
+		invoker.execute( request );		
+
+		/*InvocationRequest request = new DefaultInvocationRequest();
 		request.setPomFile(new File(workingDirectory, "pom.xml"));
-		System.out.println("test 4");
 		request.setGoals(Collections.singletonList(mavenCommand));
 	 
 		Invoker invoker = new DefaultInvoker();
-		System.out.println("test 5");
 		final StringBuilder mavenOutput = new StringBuilder();
-		System.out.println("test 6");
 		invoker.setOutputHandler(new InvocationOutputHandler() {
-	 System.out.println("test 7");
 		    public void consumeLine(String line) {
 		        mavenOutput.append(line).append(System.lineSeparator());
 		    }
 		});
 		// You can find the Maven home by calling "mvn --version"
-		System.out.println("test 8");
-		invoker.setMavenHome(new File("/usr/local/Cellar/maven/3.3.3/libexec"));
-		System.out.println("test 9");
+		invoker.setMavenHome(new File("/usr/share/maven/bin/mvn"));
 		try {
 		    InvocationResult invocationResult = invoker.execute(request);
+
 		    // Process maven output
 		    System.out.println(mavenOutput);
 		    if (invocationResult.getExitCode() != 0) {
@@ -292,7 +292,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		    }
 		} catch (MavenInvocationException e) {
 		    e.printStackTrace();
-		}
+		}*/
 	    }
 
     @Extension
