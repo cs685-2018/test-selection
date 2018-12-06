@@ -84,7 +84,19 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
             		throw new NullPointerException("TestGenerationBuildWrapper.setUp.tearDown: AbstractBuild.getWorkspace() object is null.");
             	}
                 TestGeneration stats = buildStats(build.getWorkspace(), build);
-                String report = generateReport(build.getProject().getDisplayName(), stats);
+		String absolutePath = "example/src/test/java/example"; 				
+		System.out.println(absolutePath);		
+		String command = "-Dtest = FeedsWalrusTest#test";
+		//"mvn -Dtest key +" + tests;		
+		String output = "";
+		try {
+			output = runCommand(command, new File(absolutePath));
+		} catch (MavenInvocationException e) {
+			// TODO Auto-generated catch block
+			output = "no output";
+			e.printStackTrace();
+		}
+                String report = generateReport(build.getProject().getDisplayName(), stats, output);
                 File artifactsDir = build.getArtifactsDir();
                 if (!artifactsDir.isDirectory()) {
                     boolean success = artifactsDir.mkdirs();
@@ -103,21 +115,12 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		//Path currentRelativePath = Paths.get("");
 		//String absolutePath = currentRelativePath.toAbsolutePath().toString();
 		//String tests = "#"+ String.join('+',selectedTestsMapper.get(key)) ;
-		String absolutePath = "example/src/test/java/example"; 				
-		String command = "mvn -Dtest = FeedsWalrusTest#test";
-		//"mvn -Dtest key +" + tests;		
 
-		try {
-			runCommand(command, new File(absolutePath));
-		} catch (MavenInvocationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println(command + " was the command");
 	
 		return super.tearDown(build, listener);
 			}
         };
+
     }
 
     private static TestGeneration buildStats(FilePath root, AbstractBuild build) throws IOException, InterruptedException {
@@ -169,7 +172,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         return new TestGeneration(classMap, workspaceDir, build);
     }
 
-    private static String generateReport(String projectName, TestGeneration stats) throws IOException {
+    private static String generateReport(String projectName, TestGeneration stats, String output) throws IOException {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         try (InputStream in = TestGenerationBuildWrapper.class.getResourceAsStream(REPORT_TEMPLATE_PATH)) {
             byte[] buffer = new byte[1024];
@@ -221,6 +224,8 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         	commitContent.append(commit.getEscapedDiff());
         	commitContent.append("</td></tr>\n</table>\n");
         }
+	commitContent.append("Maven Output <br/>" + output);
+	
         content = content.replace(GIT_COMMITS_VAR, commitContent.toString());
         
         content = content.replace(GIT_DIFFS_VAR, stats.getDifferences() + "\n");
@@ -266,19 +271,15 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         return content;
     }
 
-	public void runCommand(String mavenCommand, File workingDirectory) throws MavenInvocationException {
+	public String runCommand(String mavenCommand, File workingDirectory) throws MavenInvocationException {	
 		InvocationRequest request = new DefaultInvocationRequest();
-		request.setPomFile( new File( "/path/to/pom.xml" ) );
-		request.setGoals( Collections.singletonList( "install" ) );
-		 
-		Invoker invoker = new DefaultInvoker();
-		invoker.execute( request );		
-
-		/*InvocationRequest request = new DefaultInvocationRequest();
 		request.setPomFile(new File(workingDirectory, "pom.xml"));
+
+
+		List<String> goals= new ArrayList<String>(); goals.add(mavenCommand); goals.add("test");
+		
 		request.setGoals(Collections.singletonList(mavenCommand));
-	 
-		Invoker invoker = new DefaultInvoker();
+	 	Invoker invoker = new DefaultInvoker();			
 		final StringBuilder mavenOutput = new StringBuilder();
 		invoker.setOutputHandler(new InvocationOutputHandler() {
 		    public void consumeLine(String line) {
@@ -286,7 +287,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		    }
 		});
 		// You can find the Maven home by calling "mvn --version"
-		invoker.setMavenHome(new File("/usr/share/maven/bin/mvn"));
+		invoker.setMavenHome(new File("/usr/share/maven"));
 		try {
 		    InvocationResult invocationResult = invoker.execute(request);
 
@@ -297,7 +298,8 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		    }
 		} catch (MavenInvocationException e) {
 		    e.printStackTrace();
-		}*/
+		}
+		return mavenOutput.toString();	
 	    }
 
     @Extension
