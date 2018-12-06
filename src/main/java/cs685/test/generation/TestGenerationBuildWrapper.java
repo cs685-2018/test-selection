@@ -125,9 +125,23 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 // Generate the Maven test selection string
                 StringBuilder testSelection = new StringBuilder();
                 int i = 0;
+		
+
+		String mavenOutput = "";
+		Path currentRelativePath = Paths.get("");
+                String absolutePath = build.getWorkspace().getRemote();
+                System.out.println(absolutePath);		
                 for (String className : selectedTestsMapper.keySet()) {
                 	testSelection.append(className);
-                	testSelection.append("#");
+			String tests = className + "#"+ String.join("+",selectedTestsMapper.get(className));   
+            	        try {
+		        	mavenOutput += runCommand(tests, new File(absolutePath));
+		        } catch (MavenInvocationException e) {
+		            // TODO Auto-generated catch block
+			    mavenOutput += "no output";
+			    e.printStackTrace();
+			}
+			testSelection.append("#");
                 	testSelection.append(String.join("+", selectedTestsMapper.get(className)));
                 	// Separate classes by comma (should work for maven-surefire 2.19+
                 	if (i+1 < selectedTestsMapper.keySet().size()) {
@@ -138,21 +152,8 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 System.out.println("Test selection string=[" + testSelection.toString() + "]");
                 
                 // TODO: execute selected tests
-                Path currentRelativePath = Paths.get("");
-                String absolutePath = build.getWorkspace().getRemote();
-                System.out.println(absolutePath);
-		
-                
-		String command = "test -Dtest="+testSelection.toString();
 
-                String mavenOutput = "";
-                try {
-                    mavenOutput = runCommand(command, new File(absolutePath));
-                } catch (MavenInvocationException e) {
-                    // TODO Auto-generated catch block
-                    mavenOutput = "no output";
-                    e.printStackTrace();
-                }
+	
                 
                 // Temporary method to display selected tests
                 String report = generateReport(build.getProject().getDisplayName(), selectedTestsMapper, mavenOutput);//testSelection.toString());
