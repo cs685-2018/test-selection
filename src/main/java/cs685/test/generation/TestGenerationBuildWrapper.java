@@ -138,10 +138,9 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 
                 // TODO: execute selected tests
                 Path currentRelativePath = Paths.get("");
-                String absolutePath = currentRelativePath.toAbsolutePath().toString();
-                //build.getWorkspace()
+                String absolutePath = build.getWorkspace().getRemote();//currentRelativePath.toAbsolutePath().toString();
                 System.out.println(absolutePath);
-                String command = "-Dtest = FeedsWalrusTest#test";
+                String command = "-Dtest=CharacterReaderTest#consume";
                 //"mvn -Dtest key +" + tests;		
                 String mavenOutput = "";
                 try {
