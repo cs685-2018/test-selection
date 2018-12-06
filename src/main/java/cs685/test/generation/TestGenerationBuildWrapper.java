@@ -131,17 +131,20 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
                 	testSelection.append(String.join("+", selectedTestsMapper.get(className)));
                 	// Separate classes by comma (should work for maven-surefire 2.19+
                 	if (i+1 < selectedTestsMapper.keySet().size()) {
-                		testSelection.append(",");
+                		testSelection.append(",");	
                 	}
+			i++;
                 }
                 System.out.println("Test selection string=[" + testSelection.toString() + "]");
                 
                 // TODO: execute selected tests
                 Path currentRelativePath = Paths.get("");
-                String absolutePath = build.getWorkspace().getRemote();//currentRelativePath.toAbsolutePath().toString();
+                String absolutePath = build.getWorkspace().getRemote();
                 System.out.println(absolutePath);
-                String command = "-Dtest=CharacterReaderTest#consume";
-                //"mvn -Dtest key +" + tests;		
+		
+                
+		String command = "test -Dtest="+testSelection.toString();
+
                 String mavenOutput = "";
                 try {
                     mavenOutput = runCommand(command, new File(absolutePath));
@@ -250,14 +253,14 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
 		request.setPomFile(new File(workingDirectory, "pom.xml"));
 
 
-		List<String> goals= new ArrayList<String>(); goals.add(mavenCommand); goals.add("test");
+		List<String> goals= new ArrayList<String>(); goals.add(mavenCommand);
 		
 		request.setGoals(Collections.singletonList(mavenCommand));
 	 	Invoker invoker = new DefaultInvoker();			
 		final StringBuilder mavenOutput = new StringBuilder();
 		invoker.setOutputHandler(new InvocationOutputHandler() {
 		    public void consumeLine(String line) {
-		        mavenOutput.append(line).append(System.lineSeparator());
+		        mavenOutput.append(line).append("<br/>");
 		    }
 		});
 		// You can find the Maven home by calling "mvn --version"
