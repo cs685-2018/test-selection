@@ -1,29 +1,32 @@
 package cs685.test.selection.ir;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.jenkinsci.plugins.lucene.search.FreeTextSearchItemImplementation;
-
+import hudson.FilePath;
 import hudson.model.Item;
 import jenkins.model.Jenkins;
 
-public class IndexerManager {
+public class IndexManager {
 	private transient Indexer instance;
+	private FilePath root;
 	
-	private synchronized Indexer getIndexer() {
+	private synchronized Indexer getIndexer() throws IOException, InterruptedException {
 		if (instance == null) {
-			instance = new Indexer();
+			instance = new Indexer(root);
 		}
 		return instance;
 	}
 	
-	/*public IndexManager() {
-		
-	}*/
+	public IndexManager(FilePath root) {
+		this.root = root;
+	}
 	//TODO: may need to implement other methods
-	public List<TestCase> getHits(String query, boolean includeHighlights) {
-        List<TestCase> hits = getIndexer().getHits(query);
+	public List<TestCase> getHits(String query, int n) throws IOException, InterruptedException {
+        List<TestCase> hits = getIndexer().getHits(query, n);
+        return hits;
+        /* do we need this code??
         Jenkins jenkins = Jenkins.getInstance(); // TODO: is this just getting the information on a Jenkins build?
         Iterator<TestCase> iter = hits.iterator();
         while (iter.hasNext()) {
@@ -34,6 +37,10 @@ public class IndexerManager {
                 iter.remove();
             }
         }
-        return hits;
+        return hits;*/
     }
+	
+	public void close() throws IOException, InterruptedException {
+		getIndexer().close();
+	}
 }

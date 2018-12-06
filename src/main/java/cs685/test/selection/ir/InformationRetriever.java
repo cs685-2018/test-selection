@@ -1,11 +1,9 @@
 package cs685.test.selection.ir;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,8 +13,6 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -79,7 +75,7 @@ public class InformationRetriever {
 
 	// Member variables
 	private List<Query> queries;
-	private Indexer indexer;
+	private IndexManager indexManager;
 	
 	/**
 	 * Creates the queries based on the diffs and files within the project (root)<br>
@@ -270,7 +266,7 @@ public class InformationRetriever {
 		}
 		
 		// Create an indexer of all test files within the project
-		indexer = new Indexer(root);
+		indexManager = new IndexManager(root);
 	}
 	
 	/**
@@ -280,13 +276,14 @@ public class InformationRetriever {
 	 * @return
 	 * @throws IOException 
 	 * @throws ParseException 
+	 * @throws InterruptedException 
 	 */
-	public Set<String> getTestDocuments(int n) throws ParseException, IOException { // TODO: possible update this to return a Set of a custom class
+	public Set<String> getTestDocuments(int n) throws ParseException, IOException, InterruptedException { // TODO: possible update this to return a Set of a custom class
 		Set<String> results = new HashSet<String>();
 		// Loop over all our queries
 		for (Query query : queries) {
 			// Find top n documents
-			List<TestCase> topDocs = indexer.getHits(query.getQuery(), n);
+			List<TestCase> topDocs = indexManager.getHits(query.getQuery(), n);
 			System.out.println("Query: [" + query.getQuery() + "]");
 			System.out.println("\tCovers: " + query.getCoverages());
 			for (TestCase testCase : topDocs) {
@@ -296,7 +293,7 @@ public class InformationRetriever {
 		return results;
 	}
 	
-	public void close() throws IOException {
-		indexer.close();
+	public void close() throws IOException, InterruptedException {
+		indexManager.close();
 	}
 }

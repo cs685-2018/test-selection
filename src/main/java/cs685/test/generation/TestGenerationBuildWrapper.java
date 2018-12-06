@@ -165,6 +165,21 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
         content = content.replace(PROJECT_NAME_VAR, projectName);
         content = content.replace(SELECTED_TESTS_VAR, selectedTests);
                 
+        /*InformationRetriever.stopwords = new HashSet<String>();
+        InformationRetriever.keywords = new HashSet<String>();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+				InformationRetriever.class.getResourceAsStream(InformationRetriever.STOPWORDS_FILENAME)))) {
+			for (String line; (line = br.readLine()) != null;) {
+				InformationRetriever.stopwords.add(line.replaceAll("\\'", "")); // remove single quotes
+			}
+		}
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(
+				InformationRetriever.class.getResourceAsStream(InformationRetriever.KEYWORDS_FILENAME)))) {
+			for (String line; (line = br.readLine()) != null;) {
+				InformationRetriever.keywords.add(line);
+			}
+		}*/
+        
         return content;
     }
 
