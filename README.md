@@ -1,2 +1,2 @@
-# test-generation
-Jenkins plugin to generate tests based on code changes
+# test-selection
+Jenkins plugin to select tests with information retrieval based on code changes

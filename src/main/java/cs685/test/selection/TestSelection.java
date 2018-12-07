@@ -1,4 +1,4 @@
-package cs685.test.generation;
+package cs685.test.selection;
 
 import java.io.IOException;
 import java.text.DateFormat;
@@ -28,7 +28,7 @@ import hudson.model.AbstractBuild;
  * @author Ryan
  *
  */
-public class TestGeneration {
+public class TestSelection {
 
     private Repository gitRepository;
     private LastChanges lastChanges;
@@ -43,7 +43,7 @@ public class TestGeneration {
      * @throws IncorrectObjectTypeException
      * @throws IOException
      */
-    public TestGeneration(FilePath workspaceDir, AbstractBuild build) throws RevisionSyntaxException, AmbiguousObjectException, IncorrectObjectTypeException, IOException {
+    public TestSelection(FilePath workspaceDir, AbstractBuild build) throws RevisionSyntaxException, AmbiguousObjectException, IncorrectObjectTypeException, IOException {
         this.gitRepository = GitLastChanges.repository(workspaceDir.getRemote() + "/.git");
         
         System.out.println("git repo: " + workspaceDir.getRemote());

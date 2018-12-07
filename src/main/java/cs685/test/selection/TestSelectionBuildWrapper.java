@@ -1,4 +1,4 @@
-package cs685.test.generation;
+package cs685.test.selection;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
@@ -54,7 +54,7 @@ import io.reflectoring.diffparser.api.model.Diff;
  * @author Ryan, Dan
  *
  */
-public class TestGenerationBuildWrapper extends BuildWrapper {
+public class TestSelectionBuildWrapper extends BuildWrapper {
 
 	private static final String PLUGIN_DISPLAY_NAME = "Use Test Selection";
     private static final String REPORT_TEMPLATE_PATH = "/results.html";
@@ -65,7 +65,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     private static final String SUREFIRE_DIRECTORY = "target/surefire-reports";
     
     @DataBoundConstructor
-    public TestGenerationBuildWrapper() {
+    public TestSelectionBuildWrapper() {
     }
 
     @Override
@@ -270,7 +270,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     	System.out.println("***TestGenerationBuildWrapper.buildStats.root (FilePath): " + workspaceDir);
     	
     	// Build the test selector (TODO: rename? used to get diffs?)
-    	TestGeneration testSelector = new TestGeneration(workspaceDir, build);
+    	TestSelection testSelector = new TestSelection(workspaceDir, build);
     	
     	// Get the list of diffs
     	DiffParser parser = new UnifiedDiffParser();
@@ -300,7 +300,7 @@ public class TestGenerationBuildWrapper extends BuildWrapper {
     		String projectName, Map<String, List<String>> selectedTests, String mavenOutput, String surefireContent, String workspaceDir)
     		throws IOException {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-        try (InputStream in = TestGenerationBuildWrapper.class.getResourceAsStream(REPORT_TEMPLATE_PATH)) {
+        try (InputStream in = TestSelectionBuildWrapper.class.getResourceAsStream(REPORT_TEMPLATE_PATH)) {
             byte[] buffer = new byte[1024];
             int read;
             while ((read = in.read(buffer)) >= 0) {
