@@ -10,6 +10,7 @@ import java.util.Stack;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
@@ -18,12 +19,12 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
@@ -51,6 +52,7 @@ import jenkins.model.Jenkins;
 public class Indexer {
 	private static final String CLASS_NAME_FIELD = "class_name";
 	private static final String METHOD_NAME_FIELD = "method_name";
+	private static final String PARAMETERS_FIELD = "parameters";
 	private static final String CONTENT_FIELD = "content";
 	
 	private static final org.apache.lucene.document.Field.Store STORE = org.apache.lucene.document.Field.Store.YES;
@@ -131,57 +133,27 @@ public class Indexer {
 					List<MethodDeclaration> methods = classDeclaration.getChildNodesByType(MethodDeclaration.class);
 					for (MethodDeclaration method : methods) {
 						boolean isTestCase = false;
+						boolean isIgnored = false;
 						NodeList<AnnotationExpr> annotations = method.getAnnotations();
 						for (AnnotationExpr annotation : annotations) {
 							if (annotation.getNameAsString().equals("Test")) {
 								isTestCase = true;
-								break;
+							}
+							else if (annotation.getNameAsString().equals("Ignore")) {
+								isIgnored = true;
 							}
 						}
 						if (isTestCase) {
-							StringBuilder methodContent = new StringBuilder();
-							// Get the method's class name
-							methodContent.append(parsedClassName);
-							methodContent.append("\n");
-							// Get method's name
-							String methodName = method.getName().asString(); // The real method name is needed later
-							String methodNameParsed = parseCamelCase(methodName).toLowerCase();
-							methodContent.append(InformationRetriever.removeStopwords(methodNameParsed));
-							methodContent.append("\n");
-							// Get method's parameters
-							for (Parameter param : method.getParameters()) {
-								String params = param.toString().replaceAll("[^A-Za-z ]", " ").trim();
-								params = parseCamelCase(params).toLowerCase();
-								methodContent.append(InformationRetriever.removeStopwords(params));
-								methodContent.append(" ");
+							String methodName = method.getName().asString();
+							List<String> parametersList = new ArrayList<String>();
+							for (Parameter parameter : method.getParameters()) {
+								parametersList.add(parameter.getTypeAsString());
 							}
-							// Get method's documentation
-							Optional<Comment> javadocComment = method.getComment();
-							if (javadocComment.isPresent()) {
-								String javadoc = javadocComment.get().getContent();
-								javadoc = javadoc.replaceAll("[^A-Za-z ]", " ").trim();
-								javadoc = parseCamelCase(javadoc).toLowerCase();
-								methodContent.append(InformationRetriever.removeStopwordsAndKeywords(javadoc));
-								methodContent.append("\n");
-							}
-							// Get method's content
-							Optional<BlockStmt> methodBlock = method.getBody();
-							if (methodBlock.isPresent()) {
-								for (Statement statement : methodBlock.get().getStatements()) {
-									String statementContent = statement.toString().replaceAll("[^A-Za-z ]", " ").trim();
-									statementContent = parseCamelCase(statementContent).toLowerCase();
-									methodContent.append(InformationRetriever.removeStopwordsAndKeywords(statementContent));
-									methodContent.append("\n");
-								}
-							}
+							String parameters = String.join(",", parametersList);
+							
 							// Create a document based on the current test method
-							Document document = new Document();
-							// Add the method's class name
-							document.add(new TextField(CLASS_NAME_FIELD, className, STORE));
-							// Add the method's name
-							document.add(new TextField(METHOD_NAME_FIELD, methodName, STORE));
-							// Add the method's content
-							document.add(new TextField(CONTENT_FIELD, methodContent.toString(), STORE));
+							Document document = buildDocument(className, methodName, parameters, 
+									getMethodContent(method, parsedClassName));
 							
 							// TODO: add checks for deleted files
 							if (indexExists) {
@@ -189,22 +161,24 @@ public class Indexer {
 								String currFilePathSplit[] = path.getRemote().split(this.projectName);
 								String currFilePath = null;
 								if (currFilePathSplit.length != 2) {
-									System.out.println("ERROR: File not in project's directory?");
+									System.out.println("ERROR: File not in project's directory? [" + currFilePath + "]");
 								} else {
 									currFilePath = currFilePathSplit[1].substring(1); // remove the leading forward slash
 								}
 								if (filesToUpdate.contains(currFilePath)) {
 									System.out.println("Our index already contains " +currFilePath + " and it needs to be updated!");
 									// Remove the old document, add the new one
-									removeDoc(className, methodName);
-									storeDoc(document);
+									removeDoc(className, methodName, parameters);
+									// Only add again if the test case is not @Ignore
+									if (!isIgnored) {
+										storeDoc(document);
+									}
 								} // Else, we will skip adding documents that don't need to be updated
 								else {
-									System.out.println("No need to update at this time. " + currFilePath);
+									System.out.println("No need to update at this time: " + currFilePath);
 								}
 							} else {
 								// Add all documents if we didn't have an index
-								System.out.println("No existing index, adding document...");
 								this.dbWriter.addDocument(document);
 							}
 							
@@ -230,14 +204,13 @@ public class Indexer {
         for (int i = 0; i < reader.maxDoc(); i++) {
         	//dont care about deletions for now...
         	Document d = this.reader.document(i);
-        	System.out.println("Document["+Integer.toString(i)+"]: class=[" + d.get(CLASS_NAME_FIELD)+"], method=["+
-        			d.get(METHOD_NAME_FIELD)+"]");
+        	System.out.println("Document["+Integer.toString(i)+"]: " + 
+        			d.get(CLASS_NAME_FIELD)+"." +
+        			d.get(METHOD_NAME_FIELD)+"("+
+        			d.get(PARAMETERS_FIELD)+")");
         }
 	}
 
-	/**
-	 * 
-	 */
 	public synchronized void close() {
 		IOUtils.closeQuietly(this.dbWriter);
 		IOUtils.closeQuietly(this.index);
@@ -283,11 +256,12 @@ public class Indexer {
             for (Document doc : docs) {
                 String className = doc.get(CLASS_NAME_FIELD);
                 String methodName = doc.get(METHOD_NAME_FIELD);
+                String parameters = doc.get(PARAMETERS_FIELD);
                 String content = doc.get(CONTENT_FIELD);
                 
-                System.out.println("Document found: (className=[" + className + "], methodName=[" + methodName + "])");
+                System.out.println("Document found: " + className + "." + methodName + "(" + parameters + ")");
 
-                testCases.add(new TestCase(className, methodName, content));
+                testCases.add(new TestCase(className, methodName, parameters, content));
             }
         } catch (ParseException e) {
             // Do nothing
@@ -313,26 +287,32 @@ public class Indexer {
      * @param methodName
      * @return
      */
-    public Document removeDoc(String className, String methodName) {//typeSignature
+    public Document removeDoc(String className, String methodName, String parameters) {//typeSignature
         try {
-        	// Create terms for class and method names
-        	Term classTerm = new Term(CLASS_NAME_FIELD, className);
-        	Term methodTerm = new Term(METHOD_NAME_FIELD, className);
             IndexSearcher searcher = new IndexSearcher(reader);
             
-            // Search for a matching document
-            // TODO: for overloaded methods, this may cause problems
-            // TODO: may need to add another document field for parameter types/signatures
-            TopDocs search = searcher.search(new TermQuery(classTerm), 1);
+            // NOTE: good explanation on TermQuery/QueryParser
+            // https://stackoverflow.com/questions/40467591/what-is-the-difference-between-termquery-and-queryparser-in-lucene-6-0
+            
+            // Creates a query over multiple fields
+            // [field1,...,fieldn], [query1,...,queryn]
+            // Creates the query: [field1:query1,...,fieldn:queryn]
+            Query query = MultiFieldQueryParser.parse(
+            		new String[] {CLASS_NAME_FIELD, METHOD_NAME_FIELD, PARAMETERS_FIELD},
+            		new String[] {className, methodName, parameters},
+            		new SimpleAnalyzer());
+            
+            // Search that there exists a document of the given class, method, and parameter types
+            TopDocs search = searcher.search(query, 1);
             Document doc = null;
             if (search.scoreDocs.length > 0) {
-            	// Delete matching documents
+            	// Delete all documents with the matching signature: class.method.parameters (should be 1)
                 doc = searcher.doc(search.scoreDocs[0].doc);
-                dbWriter.deleteDocuments(classTerm, methodTerm);
+                dbWriter.deleteDocuments(query);
                 updateReader();
             }
             return doc;
-        } catch (IOException e) {
+        } catch (IOException | ParseException e) {
             throw new RuntimeException(e);
         }
     }
@@ -350,5 +330,74 @@ public class Indexer {
 			result.append(" ");
 		}
 		return result.toString();
+	}
+	
+	/**
+	 * 
+	 * @param method
+	 * @param parsedClassName
+	 * @return
+	 */
+	public static String getMethodContent(MethodDeclaration method, String parsedClassName) {
+		StringBuilder methodContent = new StringBuilder();
+		// Get the method's class name
+		methodContent.append(parsedClassName);
+		methodContent.append("\n");
+		// Get method's name
+		String methodName = method.getName().asString(); // The real method name is needed later
+		String methodNameParsed = parseCamelCase(methodName).toLowerCase();
+		methodContent.append(InformationRetriever.removeStopwords(methodNameParsed));
+		methodContent.append("\n");
+		// Get method's parameters
+		for (Parameter param : method.getParameters()) {
+			String params = param.toString().replaceAll("[^A-Za-z ]", " ").trim();
+			params = parseCamelCase(params).toLowerCase();
+			methodContent.append(InformationRetriever.removeStopwords(params));
+			methodContent.append(" ");
+		}
+		// Get method's documentation
+		Optional<Comment> javadocComment = method.getComment();
+		if (javadocComment.isPresent()) {
+			String javadoc = javadocComment.get().getContent();
+			javadoc = javadoc.replaceAll("[^A-Za-z ]", " ").trim();
+			javadoc = parseCamelCase(javadoc).toLowerCase();
+			methodContent.append(InformationRetriever.removeStopwordsAndKeywords(javadoc));
+			methodContent.append("\n");
+		}
+		// Get method's content
+		Optional<BlockStmt> methodBlock = method.getBody();
+		if (methodBlock.isPresent()) {
+			for (Statement statement : methodBlock.get().getStatements()) {
+				String statementContent = statement.toString().replaceAll("[^A-Za-z ]", " ").trim();
+				statementContent = parseCamelCase(statementContent).toLowerCase();
+				methodContent.append(InformationRetriever.removeStopwordsAndKeywords(statementContent));
+				methodContent.append("\n");
+			}
+		}
+		
+		return methodContent.toString();
+	}
+	
+	/**
+	 * 
+	 * @param className
+	 * @param methodName
+	 * @param parameters
+	 * @param content
+	 * @return
+	 */
+	public static Document buildDocument(String className, String methodName, String parameters, String content) {
+		Document document = new Document();
+		
+		// Add the method's class name
+		document.add(new TextField(CLASS_NAME_FIELD, className, STORE));
+		// Add the method's name
+		document.add(new TextField(METHOD_NAME_FIELD, methodName, STORE));
+		// Add the method's parameters
+		document.add(new TextField(PARAMETERS_FIELD, parameters, STORE));
+		// Add the method's content
+		document.add(new TextField(CONTENT_FIELD, content, STORE));
+		
+		return document;
 	}
 }
