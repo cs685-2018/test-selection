@@ -1,7 +1,8 @@
 # Jenkins Test Selection plugin
+
 Jenkins plugin to select tests with information retrieval based on code changes.
 
-To build the plugin, run `mvn clean install package`. The compile may fail due to the <em>findbugs</em> Maven plugin. If so, add the parameter: `-Dfindbugs.skip=true`
+To build the plugin, run `mvn clean install package`
 
 The plugin file will be located at:<br/> `target/test-selection.hpi`<br/>
 Upload the plugin to the Jenkins server and restart. When creating a new project in Jenkins, or configuring an existing one, select the option <em>Use Test Selection</em> under <em>Build Environment</em>
@@ -11,8 +12,9 @@ A Git repository must be attached to the project. When configuring your project 
 The report will be located under <em>Build Artifacts</em> for the build, and is titled `results.html`
 
 ## Dependencies
+
 This project was developed and tested with the following dependencies:
-- Java 8
+- Java 8 (jdk 1.8.0_181)
 - Jenkins 2.7.3
 - jenkins-ci.plugins 2.33
 - Last Changes 2.6.8
