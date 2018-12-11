@@ -11,7 +11,7 @@ A Git repository must be attached to the project. When configuring your project 
 
 The report will be located under <em>Build Artifacts</em> for the build, and is titled `results.html`
 
-example_report.html is an example of what the results will look like
+`example_report.html` is an example of the report page after executing a build with the plugin.
 
 ## Dependencies
 
