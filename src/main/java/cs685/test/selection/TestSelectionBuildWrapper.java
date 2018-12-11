@@ -118,103 +118,11 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
                 // Generate the Maven test selection string
                 StringBuilder testSelection = new StringBuilder();
                 int i = 0;
-
                 // Builds an output log of the mavenOutput
-                StringBuilder surefireContent = new StringBuilder();
 				StringBuilder mavenOutput = new StringBuilder();
 		        String absolutePath = build.getWorkspace().getRemote();
-		        System.out.println(absolutePath);		
+		        System.out.println(absolutePath);
 		        for (String className : selectedTestsMapper.keySet()) {
-		        	for (String methodName : selectedTestsMapper.get(className)) {
-		        		String command = "test -DfailIfNoTests=false -Dtest=" + className + "#" + methodName;
-		        		try {
-				        	mavenOutput.append(runCommand(command, new File(absolutePath)));
-				        	
-				        	// Parse the surefire-report with this test case
-				        	String workspaceDir = build.getWorkspace().getRemote();
-				        	File surefireDir = new File(workspaceDir, SUREFIRE_DIRECTORY);
-				            if (surefireDir.isDirectory()) {
-				            	DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-				            	DocumentBuilder dbBuilder;
-			    				dbBuilder = dbFactory.newDocumentBuilder();
-			    	        	File[] surefireReports = surefireDir.listFiles();
-			    	        	boolean foundReport = false;
-			    	        	for (File surefireReport : surefireReports) {
-			    	        		// Check if this is a TEST xml report file
-			    	        		String surefireReportFilename = surefireReport.getName();
-			    	        		if (surefireReportFilename.endsWith(".xml") 
-			    	        				&& surefireReportFilename.contains("TEST")
-			    	        				&& surefireReportFilename.contains(className)) {
-			    	        			foundReport = true;
-			    	        			//org.w3c.dom.Document
-			    	        			Document doc = dbBuilder.parse(surefireReport);
-			    	        			doc.getDocumentElement().normalize();
-			    	        			NodeList testSuites = doc.getElementsByTagName("testsuite");
-			    	        			// Iterate over all test suites, should just be 1
-			    	        			for (int j = 0; j < testSuites.getLength(); j++) {
-			    	        				Node testSuite = testSuites.item(j);
-			    	        				if (testSuite.getNodeType() == Node.ELEMENT_NODE) {
-			    	        					Element testSuiteElement = (Element)testSuite;
-			    	        					// Get test suite attributes
-			    	        					String tests = testSuiteElement.getAttribute("tests");
-			    	        					String errors = testSuiteElement.getAttribute("errors");
-			    	        					String skipped = testSuiteElement.getAttribute("skipped");
-			    	        					String failures = testSuiteElement.getAttribute("failures");
-			    	        					// Get all test cases (should just be 1)
-			    	        					NodeList testCases = testSuiteElement.getElementsByTagName("testcase");
-			    	        					for (int k = 0; k < testCases.getLength(); k++) {
-			    	        						Node testCase = testCases.item(k);
-			    	        						if (testCase.getNodeType() == Node.ELEMENT_NODE) {
-			    	        							Element testCaseElement = (Element)testCase;
-			    	        							String testCaseMethod = testCaseElement.getAttribute("name");
-			    	        							String testCaseClass = testCaseElement.getAttribute("classname");
-			    	        							String testCaseTime = testCaseElement.getAttribute("time");
-			    	        							// TODO: if we fix maven-surefire execution for multiple test cases this may need to change
-			    	        							surefireContent.append("<tr><td>").append(testCaseClass).append("#").append(testCaseMethod)
-			    	        								.append("</td><td>").append(testCaseTime).append("s</td><td>");
-			    	        							if (Integer.parseInt(errors) > 0 || Integer.parseInt(failures) > 0) {
-			    	        								surefireContent.append("<font color=\"red\">FAILED<font/>");
-			    	        							}
-			    	        							else if (Integer.parseInt(skipped) > 0) {
-			    	        								surefireContent.append("<font color=\"yellow\">SKIPPED<font/>");
-			    	        							} else {
-			    	        								surefireContent.append("<font color=\"green\">SUCCESS<font/>");
-			    	        							}
-			    	        							surefireContent.append("</td></tr>");
-			    	        						} else {
-			    	        							System.out.println("ERROR: testCase node is not of type ELEMENT_NODE, but type: " + testCase.getNodeType());
-			    	        						}
-			    	        					}
-			    	        				} else {
-			    	        					System.out.println("ERROR: testSuite node is not of type ELEMENT_NODE, but type: " + testSuite.getNodeType());
-			    	        				}
-			    	        			}
-			    	        		}
-			    	        	}
-			    	        	if (!foundReport) {
-			    	        		System.out.println("ERROR: could not find surefire-report for: " + className);
-			    	        		surefireContent.append("<font color=\"red\"><strong>Could not find report for ")
-			    	        			.append(className).append("</strong></font>");
-			    	        	}
-				            } else {
-				            	System.out.println("ERROR: incorrect surefire-reports directory: " + surefireDir);
-				            	surefireContent.append("<font color=\"red\"><strong>Incorrect surefire-reports directory</strong></font>");
-				            }
-				        	
-				        } catch (MavenInvocationException e) {
-		    			    mavenOutput.append("<br/><font color=\"red\"><strong>TEST FAILED: ");
-		    			    mavenOutput.append(className).append(".").append(methodName).append("</strong></font><br/>");
-		    			    e.printStackTrace();
-		    			} catch (ParserConfigurationException e) {
-		    				System.out.println("ERROR: failed parsing maven-surefire xml reports: ParserConfigurationException");
-		    				surefireContent.append("<font color=\"red\">Failed parsing maven-surefire xml reports: ParserConfigurationException</font>");
-		    				e.printStackTrace();
-		    			} catch (SAXException e) {
-		    				System.out.println("ERROR: failed parsing maven-surefire xml reports: SAXException");
-		    				surefireContent.append("<font color=\"red\">Failed parsing maven-surefire xml reports: SAXException</font>");
-		    				e.printStackTrace();
-		    			}
-		        	}
 		        	// Code for using maven-surefire 2.19+
 		        	testSelection.append(className).append("#");
 		        	testSelection.append(String.join("+", selectedTestsMapper.get(className)));
@@ -225,12 +133,18 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
 		        	i++;
 		        }
 		        System.out.println("Test selection string=[" + testSelection.toString() + "]");
-                
-                // Temporary method to display selected tests
+		        String command = "test -DfailIfNoTests=false -Dtest=" + testSelection.toString();
+		        try {
+					mavenOutput.append(runCommand(command, new File(absolutePath)));
+				} catch (MavenInvocationException e) {
+					mavenOutput.append("<font color=\"red\">MavenInvocationException</font>");
+					e.printStackTrace();
+				}
+		        
+		        // Generate a report and analyze the maven surefire reports
 				String report = generateReport(build.getProject().getDisplayName(), 
 						selectedTestsMapper, 
 						mavenOutput.toString(),
-						surefireContent.toString(),
 						build.getWorkspace().getRemote());
 			
                 
@@ -268,8 +182,8 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
     private static Set<String> getSelectedTests(FilePath root, AbstractBuild build, int n) throws IOException, InterruptedException, ParseException {
     	FilePath workspaceDir = root;
     	System.out.println("***TestGenerationBuildWrapper.buildStats.root (FilePath): " + workspaceDir);
-    	
-    	// Build the test selector (TODO: rename? used to get diffs?)
+
+    	// TODO: rename TestSelection?
     	TestSelection testSelector = new TestSelection(workspaceDir, build);
     	
     	// Get the list of diffs
@@ -297,7 +211,7 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
      * @throws SAXException 
      */
     private static String generateReport(
-    		String projectName, Map<String, List<String>> selectedTests, String mavenOutput, String surefireContent, String workspaceDir)
+    		String projectName, Map<String, List<String>> selectedTests, String mavenOutput, String workspaceDir)
     		throws IOException {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         try (InputStream in = TestSelectionBuildWrapper.class.getResourceAsStream(REPORT_TEMPLATE_PATH)) {
@@ -327,10 +241,103 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
         content = content.replace(SELECTED_TESTS_VAR, selectedTestsContent);
 
         // Parse the surefire-reports XML files
-        // TODO: move this back here when maven-surefire 2.19+ is working
-        //StringBuilder surefireContent = new StringBuilder();
+    	File surefireDir = new File(workspaceDir, SUREFIRE_DIRECTORY);
+    	StringBuilder surefireContent = new StringBuilder();
+    	try {
+	        if (surefireDir.isDirectory()) {
+	        	DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+	        	DocumentBuilder dbBuilder;
+				dbBuilder = dbFactory.newDocumentBuilder();
+	        	File[] surefireReports = surefireDir.listFiles();
+	        	for (File surefireReport : surefireReports) {
+	        		// Check if this is a TEST xml report file
+	        		String surefireReportFilename = surefireReport.getName();
+	        		// Build the report for each test suite
+	        		// See the following link for the surefire report Xml schema:
+	        		// https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd
+	        		if (surefireReportFilename.contains("TEST") && surefireReportFilename.endsWith(".xml")) {
+	        			//org.w3c.dom.Document
+	        			Document doc = dbBuilder.parse(surefireReport);
+	        			doc.getDocumentElement().normalize();
+	        			NodeList testSuites = doc.getElementsByTagName("testsuite");
+	        			// Iterate over all test suites, should just be 1
+	        			for (int j = 0; j < testSuites.getLength(); j++) {
+	        				Node testSuite = testSuites.item(j);
+	        				if (testSuite.getNodeType() == Node.ELEMENT_NODE) {
+	        					Element testSuiteElement = (Element)testSuite;
+	        					// Get test suite attributes
+	        					String className = testSuiteElement.getAttribute("name");
+	        					String totalTime = testSuiteElement.getAttribute("time");
+	        					int tests = Integer.parseInt(testSuiteElement.getAttribute("tests"));
+	        					int errors = Integer.parseInt(testSuiteElement.getAttribute("errors"));
+	        					int skipped = Integer.parseInt(testSuiteElement.getAttribute("skipped"));
+	        					int failures = Integer.parseInt(testSuiteElement.getAttribute("failures"));
+	        					surefireContent.append("<p><strong><em>").append(className)
+	        						.append("</strong></em>: ").append(tests).append(" tests ran");
+	        					if (errors > 0) {
+	        						surefireContent.append(", <font color=\"red\">").append(errors).append("</font> errors");
+	        					}
+	        					if (skipped > 0) {
+	        						surefireContent.append(", <font color=\"orange\">").append(skipped).append("</font> skipped");
+	        					}
+	        					if (failures > 0) {
+	        						surefireContent.append(", <font color=\"red\">").append(failures).append("</font> failures");
+	        					}
+	        					surefireContent.append("</p><p>Total time: ").append(totalTime)
+	        						.append(" s</p><p><table border=\"1\"><tr><td><strong>Test case</strong></td>")
+	        						.append("<td><strong>time (s)</strong></td><td><strong>Result</strong></td></tr>\n");
+	        					// Get all test cases 
+	        					NodeList testCases = testSuiteElement.getElementsByTagName("testcase");
+	        					for (int k = 0; k < testCases.getLength(); k++) {
+	        						Node testCase = testCases.item(k);
+	        						if (testCase.getNodeType() == Node.ELEMENT_NODE) {
+	        							Element testCaseElement = (Element)testCase;
+	        							String testCaseMethod = testCaseElement.getAttribute("name");
+	        							String testCaseClass = testCaseElement.getAttribute("classname");
+	        							String testCaseTime = testCaseElement.getAttribute("time");
+	        							// Only checking for <skipped>, <error>, and <failure>
+	        							NodeList skippedNode = testCaseElement.getElementsByTagName("skipped");
+	        							NodeList errorNode = testCaseElement.getElementsByTagName("error");
+	        							NodeList failureNode = testCaseElement.getElementsByTagName("failure");
+	        							// TODO: check if we need the testCaseClass
+	        							surefireContent.append("<tr><td>").append(testCaseMethod).append("</td><td>")
+	        								.append(testCaseTime).append("</td><td><font color=\"");
+	        							if (errorNode.getLength() > 0 || failureNode.getLength() > 0) {
+	        								surefireContent.append("red\">").append("FAILED");
+	        							}
+	        							else if (skippedNode.getLength() > 0) {
+	        								surefireContent.append("orange\">").append("SKIPPED");
+	        							} else {
+	        								surefireContent.append("green\">").append("SUCCESS");
+	        							}
+	        							surefireContent.append("</font></td></tr>");
+	        						} else {
+	        							System.out.println("ERROR: testCase node is not of type ELEMENT_NODE, but type: " + testCase.getNodeType());
+	        						}
+	        					}
+	        					surefireContent.append("</table></p>");
+	        				} else {
+	        					System.out.println("ERROR: testSuite node is not of type ELEMENT_NODE, but type: " + testSuite.getNodeType());
+	        				}
+	        			}
+	        		}
+	        	}
+	        } else {
+	        	System.out.println("Could not find directory for surefire reports, expected: " + surefireDir.getAbsolutePath());
+	        	surefireContent.append("<font color=\"red\">ERROR</font>: Could not find surefire reports directory");
+	        }
+    	} catch (SAXException e) {
+    		System.out.println("ERROR: failed parsing maven-surefire xml reports: SAXException");
+    		surefireContent.append("<font color=\"red\">Failed parsing maven-surefire xml reports: SAXException</font>");
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			System.out.println("ERROR: failed parsing maven-surefire xml reports: ParserConfigurationException");
+			surefireContent.append("<font color=\"red\">Failed parsing maven-surefire xml reports: ParserConfigurationException</font>");
+			e.printStackTrace();
+		}
+    	
         
-        content = content.replace(SUREFIRE_REPORTS_VAR, surefireContent);
+        content = content.replace(SUREFIRE_REPORTS_VAR, surefireContent.toString());
         
         
         // Display Maven output
