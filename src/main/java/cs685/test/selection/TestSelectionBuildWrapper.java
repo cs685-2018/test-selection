@@ -70,7 +70,6 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
 
     @Override
     public Environment setUp(AbstractBuild build, final Launcher launcher, BuildListener listener) {
-    	// TODO: find a better method to display the test selection results than an html file
         return new Environment() {
             @Override
             public boolean tearDown(AbstractBuild build, BuildListener listener)
@@ -86,8 +85,8 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
             	}
             	
             	// Get the selected tests
-            	// TODO: change n (10) to be a tunable parameter by the user
-            	int n = 10;
+            	// TODO: change n (5) to be a tunable parameter by the user
+            	int n = 5;
             	Set<String> selectedTests = null;
                 try {
 					selectedTests = getSelectedTests(build.getWorkspace(), build, n);
@@ -147,8 +146,7 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
 						mavenOutput.toString(),
 						build.getWorkspace().getRemote());
 			
-                
-                // TODO: old method to generate the report
+				// Old method to generate the report
                 File artifactsDir = build.getArtifactsDir();
                 if (!artifactsDir.isDirectory()) {
                     boolean success = artifactsDir.mkdirs();
@@ -170,7 +168,7 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
     }
 
     /**
-     * 
+     * Returns the selected tests from the InformationRetriever at the given FilePath
      * @param root
      * @param build
      * @param n
@@ -181,9 +179,6 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
      */
     private static Set<String> getSelectedTests(FilePath root, AbstractBuild build, int n) throws IOException, InterruptedException, ParseException {
     	FilePath workspaceDir = root;
-    	System.out.println("***TestGenerationBuildWrapper.buildStats.root (FilePath): " + workspaceDir);
-
-    	// TODO: rename TestSelection?
     	TestSelection testSelector = new TestSelection(workspaceDir, build);
     	
     	// Get the list of diffs
@@ -200,8 +195,8 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
         return selectedTests;
     }
 
-    // TODO: display results differently
     /**
+     * Generates the contents of the report results.html file
      * 
      * @param projectName
      * @param selectedTests
@@ -293,13 +288,11 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
 	        						if (testCase.getNodeType() == Node.ELEMENT_NODE) {
 	        							Element testCaseElement = (Element)testCase;
 	        							String testCaseMethod = testCaseElement.getAttribute("name");
-	        							String testCaseClass = testCaseElement.getAttribute("classname");
 	        							String testCaseTime = testCaseElement.getAttribute("time");
 	        							// Only checking for <skipped>, <error>, and <failure>
 	        							NodeList skippedNode = testCaseElement.getElementsByTagName("skipped");
 	        							NodeList errorNode = testCaseElement.getElementsByTagName("error");
 	        							NodeList failureNode = testCaseElement.getElementsByTagName("failure");
-	        							// TODO: check if we need the testCaseClass
 	        							surefireContent.append("<tr><td>").append(testCaseMethod).append("</td><td>")
 	        								.append(testCaseTime).append("</td><td><font color=\"");
 	        							if (errorNode.getLength() > 0 || failureNode.getLength() > 0) {
@@ -335,10 +328,8 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
 			surefireContent.append("<font color=\"red\">Failed parsing maven-surefire xml reports: ParserConfigurationException</font>");
 			e.printStackTrace();
 		}
-    	
         
         content = content.replace(SUREFIRE_REPORTS_VAR, surefireContent.toString());
-        
         
         // Display Maven output
         content = content.replace(MAVEN_OUTPUT_VAR, mavenOutput);
@@ -346,10 +337,16 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
         return content;
     }
 
+    /**
+     * Invokes the given Maven command from a pom.xml file within the working directory
+     * @param mavenCommand
+     * @param workingDirectory
+     * @return
+     * @throws MavenInvocationException
+     */
 	public String runCommand(String mavenCommand, File workingDirectory) throws MavenInvocationException {	
 		InvocationRequest request = new DefaultInvocationRequest();
 		request.setPomFile(new File(workingDirectory, "pom.xml"));
-
 
 		List<String> goals= new ArrayList<String>(); goals.add(mavenCommand);
 		
@@ -369,7 +366,8 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
 		    // Process maven output
 		    System.out.println(mavenOutput);
 		    if (invocationResult.getExitCode() != 0) {
-		        // handle error
+		        System.out.println("Maven invocation error on command [" + mavenCommand + "] in directory: " + workingDirectory.getAbsolutePath());
+		        return null;
 		    }
 		} catch (MavenInvocationException e) {
 		    e.printStackTrace();
@@ -388,6 +386,7 @@ public class TestSelectionBuildWrapper extends BuildWrapper {
         @Nonnull
         @Override
         public String getDisplayName() {
+        	// Set the display name within the Jenkins project configuration
             return PLUGIN_DISPLAY_NAME;
         }
     }

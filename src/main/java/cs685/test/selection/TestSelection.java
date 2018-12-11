@@ -34,7 +34,7 @@ public class TestSelection {
     private LastChanges lastChanges;
     
     /**
-     * 
+     * Object to get the last changes between two commits given the Git repo in the workspace directory
      * @param map
      * @param workspaceDir
      * @param build
@@ -133,7 +133,7 @@ public class TestSelection {
     }
 
     /**
-     * 
+     * Returns the List of CommitChanges objects
      * @return
      */
 	public List<CommitChanges> getChanges() {
@@ -141,7 +141,7 @@ public class TestSelection {
 	}
 	
 	/**
-	 * 
+	 * Returns the DIFF file as a String between the two commits
 	 * @return
 	 */
 	public String getDifferences () {

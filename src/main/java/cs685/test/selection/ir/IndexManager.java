@@ -7,7 +7,7 @@ import java.util.Set;
 import hudson.FilePath;
 
 /**
- * 
+ * Manages access to an Indexer instance
  * @author Ryan
  *
  */
@@ -18,7 +18,7 @@ public class IndexManager {
 	private Set<String> filesToUpdate;
 	
 	/**
-	 * 
+	 * Returns the current indexer or a new one
 	 * @return
 	 * @throws IOException
 	 * @throws InterruptedException
@@ -43,7 +43,7 @@ public class IndexManager {
 	}
 	
 	/**
-	 * 
+	 * Returns the top n documents as TestCase objects given the query
 	 * @param query
 	 * @param n
 	 * @return

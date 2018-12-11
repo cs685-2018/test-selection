@@ -26,7 +26,7 @@ import io.reflectoring.diffparser.api.model.Line;
 import io.reflectoring.diffparser.api.model.Range;
 
 /**
- * 
+ * Used to create queries based on Diffs and access an Indexer
  * @author Ryan
  *
  */
@@ -40,7 +40,7 @@ public class InformationRetriever {
 	
 	// Static methods
 	/**
-	 * 
+	 * Removes the stopwords from the string as defined in its file
 	 * @param s
 	 * @return
 	 */
@@ -56,7 +56,7 @@ public class InformationRetriever {
 	}
 	
 	/**
-	 * 
+	 * Removes the stopwrods and Java keywords from the string as defined within their respective files
 	 * @param s
 	 * @return
 	 */
@@ -86,15 +86,6 @@ public class InformationRetriever {
 	 * @throws InterruptedException 
 	 */
 	public InformationRetriever(FilePath root, List<Diff> diffs, String projectName) throws IOException, InterruptedException {
-		// TODO: for each code change line:
-			// Find the line that matches in Javaparser tree (either by line number match (preferably) or string match)
-			// Use Javaparser to determine if any comments are associated with the line
-				// Special case for if they're on the same line? (ex: int i = 5; // an incrementor)
-				// the line already grabbed by the DiffParser would have this information
-		// TODO: should we add a method's/class's javadoc?
-		// TODO: check where the DiffParser diff's line number range comes from (we'd prefer just TO lines)
-			// TO lines vs all lines (neutral, from, and to)
-		
 		// Load stopwords and keywords
 		stopwords = new HashSet<String>();
 		keywords = new HashSet<String>();
@@ -326,11 +317,6 @@ public class InformationRetriever {
 		return results;
 	}
 	
-	/**
-	 * 
-	 * @throws IOException
-	 * @throws InterruptedException
-	 */
 	public void close() throws IOException, InterruptedException {
 		indexManager.close();
 	}

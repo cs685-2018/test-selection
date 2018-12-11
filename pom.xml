@@ -141,19 +141,5 @@
         </pluginRepository>
     </pluginRepositories>
     <build>
-    <!--
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.20</version> 
-        <configuration>
-          <systemPropertyVariables>
-            <maven.home>/usr/share/maven</maven.home>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-    </plugins>
-    -->
   </build>
 </project>

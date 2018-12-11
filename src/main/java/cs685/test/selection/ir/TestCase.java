@@ -1,5 +1,10 @@
 package cs685.test.selection.ir;
 
+/**
+ * Stores information on all the fields in an Apache Lucene document as Strings
+ * @author Ryan
+ *
+ */
 public class TestCase {
 	private final String className;
 	private final String methodName;

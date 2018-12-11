@@ -45,7 +45,7 @@ import hudson.FilePath;
 import jenkins.model.Jenkins;
 
 /**
- * 
+ * Indexes documents on Apache Lucene
  * @author Ryan
  *
  */
@@ -67,7 +67,8 @@ public class Indexer {
 	private DirectoryReader reader;
 
 	/**
-	 * 
+	 * Constructs the Indexer
+	 * Sets the project name, index path, and index location
 	 * @param root
 	 * @throws IOException
 	 * @throws InterruptedException 
@@ -94,7 +95,8 @@ public class Indexer {
 	}
 	
 	/**
-	 * 
+	 * Builds all documents on the index given the FilePath
+	 * Updates the documents within filesToUpdate if the index already exists
 	 * @param root
 	 * @param filesToUpdate
 	 * @param indexExists
@@ -217,7 +219,7 @@ public class Indexer {
 	}
 	
 	/**
-	 * 
+	 * Commits documents to the index and updates the reader
 	 * @throws IOException
 	 */
 	private void updateReader() throws IOException {
@@ -226,7 +228,7 @@ public class Indexer {
     }
 	
 	/**
-	 * 
+	 * Returns the top n documents from the index given a query
 	 * @param query
 	 * @param n
 	 * @return
@@ -245,7 +247,6 @@ public class Indexer {
             ScoreDoc[] hits = collector.topDocs().scoreDocs;
             System.out.println("Found " + Integer.toString(hits.length) + " hits");
             
-            // Do we care about score ordering here?
             List<Document> docs = new ArrayList<Document>();
 
             for (ScoreDoc hit : hits) {
@@ -272,7 +273,7 @@ public class Indexer {
     }
 
 	/**
-	 * 
+	 * Quick method to both store a document and update the reader
 	 * @param doc
 	 * @throws IOException
 	 */
@@ -282,7 +283,7 @@ public class Indexer {
     }
 
     /**
-     * 
+     * Removes a document from the index given the 3 field identifiers
      * @param className
      * @param methodName
      * @return
@@ -318,7 +319,7 @@ public class Indexer {
     }
 
     /**
-     * 
+     * Parses camel case words into individual words
      * @param s
      * @return
      */
@@ -333,7 +334,7 @@ public class Indexer {
 	}
 	
 	/**
-	 * 
+	 * Builds a document's "content" field given a JavaParser MethodDeclaration and the pre-parsed class name
 	 * @param method
 	 * @param parsedClassName
 	 * @return
@@ -379,7 +380,7 @@ public class Indexer {
 	}
 	
 	/**
-	 * 
+	 * Builds an Apache Lucene document given the Strings for each field
 	 * @param className
 	 * @param methodName
 	 * @param parameters
